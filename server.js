@@ -5,15 +5,21 @@ const { exec } = require('child_process');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
+const marked = require('marked');
+const RecipeDatabase = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PASSWORD = process.env.APP_PASSWORD || 'recipe123';
 const SAVE_PATH = process.env.SAVE_PATH || './recipes';
+const DB_PATH = process.env.DB_PATH || './recipes.db';
 const SESSION_SECRET =
   process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex');
 const API_TOKEN =
   process.env.API_TOKEN || crypto.randomBytes(32).toString('hex');
+
+// Initialize database
+const db = new RecipeDatabase(DB_PATH);
 
 // Ensure save directory exists
 async function ensureSaveDirectory() {
@@ -62,12 +68,21 @@ function requireAuth(req, res, next) {
   if (req.session && req.session.authenticated) {
     return next();
   } else {
-    res.redirect('/login');
+    // For API routes, return JSON error instead of redirecting
+    if (req.path.startsWith('/api/')) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+    } else {
+      res.redirect('/login');
+    }
   }
 }
 
 // Routes
 app.get('/', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'viewer.html'));
+});
+
+app.get('/extractor', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -157,6 +172,64 @@ app.post('/extract', requireAuth, async (req, res) => {
           // Extract recipe data from content
           const titleMatch = content.match(/title:\s*'([^']+)'/);
           const title = titleMatch ? titleMatch[1] : 'Untitled Recipe';
+
+          // Parse recipe data for database
+          const cuisineMatch = content.match(/cuisine:\s*(.*)/);
+          const courseMatch = content.match(/course:\s*(.*)/);
+          const servingsMatch = content.match(/servings:\s*(.*)/);
+          const prepTimeMatch = content.match(/prep_time:\s*(.*)/);
+          const cookTimeMatch = content.match(/cook_time:\s*(.*)/);
+
+          // Extract ingredients from content section
+          const ingredientsSectionMatch = content.match(
+            /## Ingredients\s*\n((?:.*\n)*?)(?=##|$)/
+          );
+          const fullIngredients = [];
+          if (ingredientsSectionMatch) {
+            fullIngredients.push(
+              ...ingredientsSectionMatch[1]
+                .split('\n')
+                .filter(line => line.trim() && line.trim().startsWith('-'))
+                .map(line => line.replace(/^\s*-\s*/, '').trim())
+            );
+          }
+
+          // Extract instructions
+          const instructionsMatch = content.match(
+            /## Directions\s*\n((?:.*\n)*?)(?=##|$)/
+          );
+          const instructions = [];
+          if (instructionsMatch) {
+            instructions.push(
+              ...instructionsMatch[1]
+                .split('\n')
+                .filter(line => line.trim() && line.match(/^\d+\./))
+                .map(line => line.trim())
+            );
+          }
+
+          // Extract source URL from notes
+          const sourceMatch = content.match(/Source:\s*(https?:\/\/[^\s]+)/);
+
+          const recipeData = {
+            title: title,
+            cuisine: cuisineMatch ? cuisineMatch[1].trim() : null,
+            course: courseMatch ? courseMatch[1].trim() : null,
+            servings: servingsMatch ? servingsMatch[1].trim() : null,
+            prepTime: prepTimeMatch ? prepTimeMatch[1].trim() : null,
+            cookTime: cookTimeMatch ? cookTimeMatch[1].trim() : null,
+            sourceUrl: url,
+            ingredients: fullIngredients,
+            instructions: instructions,
+          };
+
+          // Save to database
+          try {
+            await db.saveRecipe(recipeData, content);
+          } catch (dbError) {
+            console.error('Failed to save to database:', dbError);
+            // Continue even if database save fails
+          }
 
           // Clean up temp directory
           await fs.rmdir(tempDir, { recursive: true });
@@ -248,6 +321,251 @@ app.get('/recipe/:filename', requireAuth, async (req, res) => {
     res.json({ success: true, content });
   } catch (err) {
     res.status(404).json({ success: false, error: 'Recipe not found' });
+  }
+});
+
+// Database API endpoints
+app.get('/api/recipes', requireAuth, (req, res) => {
+  try {
+    const recipes = db.getAllRecipes();
+    res.json({ success: true, recipes });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/recipe/:id', requireAuth, (req, res) => {
+  try {
+    const recipe = db.getRecipe(parseInt(req.params.id));
+    if (!recipe) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Recipe not found' });
+    }
+    res.json({ success: true, recipe });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/recipe/:id/scale/:factor', requireAuth, (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const factor = parseFloat(req.params.factor);
+
+    if (isNaN(factor) || factor <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Invalid scale factor' });
+    }
+
+    const scaledIngredients = db.scaleIngredients(id, factor);
+    res.json({ success: true, ingredients: scaledIngredients });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get(
+  '/api/recipe/:id/scale-to-servings/:servings',
+  requireAuth,
+  (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const servings = parseFloat(req.params.servings);
+
+      if (isNaN(servings) || servings <= 0) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'Invalid servings number' });
+      }
+
+      const result = db.scaleIngredientsToServings(id, servings);
+      if (!result) {
+        return res.status(400).json({
+          success: false,
+          error: 'Unable to scale recipe - servings not found',
+        });
+      }
+
+      res.json({ success: true, ...result });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
+
+app.post('/api/recipe/:id/category', requireAuth, (req, res) => {
+  try {
+    const { categoryId } = req.body;
+    db.updateRecipeCategory(parseInt(req.params.id), categoryId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/recipe/:id/tags', requireAuth, (req, res) => {
+  try {
+    const { tag } = req.body;
+    db.addTagToRecipe(parseInt(req.params.id), tag);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/recipe/:id/tags/:tagId', requireAuth, (req, res) => {
+  try {
+    db.removeTagFromRecipe(parseInt(req.params.id), parseInt(req.params.tagId));
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/categories', requireAuth, (req, res) => {
+  try {
+    const categories = db.getAllCategories();
+    res.json({ success: true, categories });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/categories', requireAuth, (req, res) => {
+  try {
+    const { name, color } = req.body;
+    db.createCategory(name, color);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/search', requireAuth, (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ success: false, error: 'Query required' });
+    }
+    const recipes = db.searchRecipes(q);
+    res.json({ success: true, recipes });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/recipe/:id/export', requireAuth, (req, res) => {
+  try {
+    const markdown = db.exportToMarkdown(parseInt(req.params.id));
+    if (!markdown) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Recipe not found' });
+    }
+    res.json({ success: true, markdown });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/recipe/:id', requireAuth, (req, res) => {
+  try {
+    db.deleteRecipe(parseInt(req.params.id));
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Import existing markdown files to database
+app.post('/api/import-markdown', requireAuth, async (req, res) => {
+  try {
+    const files = await fs.readdir(SAVE_PATH);
+    const mdFiles = files.filter(file => file.endsWith('.md'));
+    let imported = 0;
+
+    for (const file of mdFiles) {
+      try {
+        const content = await fs.readFile(path.join(SAVE_PATH, file), 'utf8');
+
+        // Parse markdown content
+        const titleMatch = content.match(/title:\s*'([^']+)'/);
+        const cuisineMatch = content.match(/cuisine:\s*(.*)/);
+        const courseMatch = content.match(/course:\s*(.*)/);
+        const servingsMatch = content.match(/servings:\s*(.*)/);
+        const prepTimeMatch = content.match(/prep_time:\s*(.*)/);
+        const cookTimeMatch = content.match(/cook_time:\s*(.*)/);
+
+        // Extract ingredients from frontmatter
+        const ingredientsMatch = content.match(
+          /ingredients:\s*\n((?:\s+-\s+.*\n?)*)/
+        );
+        const ingredientsList = [];
+        if (ingredientsMatch) {
+          ingredientsList.push(
+            ...ingredientsMatch[1]
+              .split('\n')
+              .filter(line => line.trim().startsWith('-'))
+              .map(line => line.replace(/^\s*-\s*/, '').trim())
+          );
+        }
+
+        // Extract ingredients from content section
+        const ingredientsSectionMatch = content.match(
+          /## Ingredients\s*\n((?:.*\n)*?)(?=##|$)/
+        );
+        const fullIngredients = [];
+        if (ingredientsSectionMatch) {
+          fullIngredients.push(
+            ...ingredientsSectionMatch[1]
+              .split('\n')
+              .filter(line => line.trim() && line.trim().startsWith('-'))
+              .map(line => line.replace(/^\s*-\s*/, '').trim())
+          );
+        }
+
+        // Extract instructions
+        const instructionsMatch = content.match(
+          /## Directions\s*\n((?:.*\n)*?)(?=##|$)/
+        );
+        const instructions = [];
+        if (instructionsMatch) {
+          instructions.push(
+            ...instructionsMatch[1]
+              .split('\n')
+              .filter(line => line.trim() && line.match(/^\d+\./))
+              .map(line => line.trim())
+          );
+        }
+
+        // Extract source URL from notes
+        const sourceMatch = content.match(/Source:\s*(https?:\/\/[^\s]+)/);
+
+        const recipeData = {
+          title: titleMatch ? titleMatch[1] : file.replace('.md', ''),
+          cuisine: cuisineMatch ? cuisineMatch[1].trim() : null,
+          course: courseMatch ? courseMatch[1].trim() : null,
+          servings: servingsMatch ? servingsMatch[1].trim() : null,
+          prepTime: prepTimeMatch ? prepTimeMatch[1].trim() : null,
+          cookTime: cookTimeMatch ? cookTimeMatch[1].trim() : null,
+          sourceUrl: sourceMatch ? sourceMatch[1] : null,
+          ingredients:
+            fullIngredients.length > 0 ? fullIngredients : ingredientsList,
+          instructions: instructions,
+        };
+
+        await db.saveRecipe(recipeData, content);
+        imported++;
+      } catch (error) {
+        console.error(`Failed to import ${file}:`, error);
+      }
+    }
+
+    res.json({ success: true, imported, total: mdFiles.length });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe Viewer - OnlyRecipe</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: #f5f5f5;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .header {
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .search-container {
+        flex: 1;
+        max-width: 500px;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #4caf50;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-primary {
+        background: #4caf50;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #45a049;
+      }
+
+      .btn-secondary {
+        background: #f1f1f1;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background: #e0e0e0;
+      }
+
+      .btn-danger {
+        background: #f44336;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #d32f2f;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        display: flex;
+        gap: 2rem;
+      }
+
+      .sidebar {
+        width: 300px;
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+      }
+
+      .sidebar h3 {
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      .category-list {
+        margin-bottom: 2rem;
+      }
+
+      .category-item {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.2s;
+      }
+
+      .category-item:hover {
+        background: #f5f5f5;
+      }
+
+      .category-item.active {
+        background: #e8f5e9;
+      }
+
+      .category-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+      }
+
+      .category-count {
+        margin-left: auto;
+        font-size: 0.8rem;
+        color: #666;
+      }
+
+      .main-content {
+        flex: 1;
+      }
+
+      .recipe-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .recipe-card {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+      }
+
+      .recipe-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .recipe-card-header {
+        padding: 1.5rem;
+      }
+
+      .recipe-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #333;
+      }
+
+      .recipe-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: #666;
+        flex-wrap: wrap;
+      }
+
+      .recipe-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .recipe-tags {
+        padding: 0 1.5rem 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .tag {
+        padding: 0.25rem 0.75rem;
+        background: #e3f2fd;
+        color: #1976d2;
+        border-radius: 15px;
+        font-size: 0.8rem;
+      }
+
+      .recipe-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        padding: 2rem;
+        overflow-y: auto;
+      }
+
+      .recipe-modal.active {
+        display: block;
+      }
+
+      .recipe-detail {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .recipe-detail-header {
+        padding: 2rem;
+        border-bottom: 1px solid #eee;
+      }
+
+      .recipe-detail-title {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .recipe-detail-meta {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+
+      .recipe-detail-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .recipe-content {
+        padding: 2rem;
+      }
+
+      .recipe-section {
+        margin-bottom: 2rem;
+      }
+
+      .recipe-section h3 {
+        margin-bottom: 1rem;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .ingredients-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .ingredient-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .ingredient-item:last-child {
+        border-bottom: none;
+      }
+
+      .ingredient-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      .ingredient-text {
+        flex: 1;
+      }
+
+      .ingredient-item.checked .ingredient-text {
+        text-decoration: line-through;
+        opacity: 0.6;
+      }
+
+      .instructions-list {
+        list-style: none;
+        padding: 0;
+        counter-reset: step-counter;
+      }
+
+      .instruction-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        gap: 1rem;
+        counter-increment: step-counter;
+      }
+
+      .instruction-item:last-child {
+        border-bottom: none;
+      }
+
+      .instruction-item::before {
+        content: counter(step-counter);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        background: #4caf50;
+        color: white;
+        border-radius: 50%;
+        flex-shrink: 0;
+        font-weight: bold;
+      }
+
+      .scale-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 8px;
+      }
+
+      .scale-btn {
+        width: 30px;
+        height: 30px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .scale-btn:hover {
+        background: #f0f0f0;
+      }
+
+      .scale-display {
+        font-weight: 600;
+        min-width: 60px;
+        text-align: center;
+      }
+
+      .close-modal {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: #f5f5f5;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: background 0.2s;
+      }
+
+      .close-modal:hover {
+        background: #e0e0e0;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 4rem;
+        color: #666;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 4rem;
+        color: #666;
+      }
+
+      .empty-state h3 {
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      .import-section {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+          padding: 1rem;
+        }
+
+        .sidebar {
+          width: 100%;
+          position: static;
+        }
+
+        .header-content {
+          flex-wrap: wrap;
+          padding: 1rem;
+        }
+
+        .search-container {
+          order: 3;
+          max-width: 100%;
+          flex-basis: 100%;
+        }
+
+        .recipe-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <a href="/" class="logo"> <span>🍳</span> OnlyRecipe </a>
+        <div class="search-container">
+          <input
+            type="text"
+            class="search-input"
+            id="searchInput"
+            placeholder="Search recipes..."
+          />
+        </div>
+        <div class="nav-links">
+          <a href="/extractor" class="btn btn-secondary">🍳 Recipe Extractor</a>
+          <a href="/logout" class="btn btn-secondary">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <aside class="sidebar">
+        <div class="category-list">
+          <h3>Categories</h3>
+          <div id="categoryList">
+            <div class="category-item active" data-category="all">
+              <div class="category-color" style="background: #888"></div>
+              <span>All Recipes</span>
+              <span class="category-count" id="allCount">0</span>
+            </div>
+          </div>
+          <button
+            class="btn btn-secondary"
+            style="width: 100%; margin-top: 1rem"
+            onclick="showCategoryModal()"
+          >
+            + Add Category
+          </button>
+        </div>
+
+        <div class="import-section">
+          <h3>Import Recipes</h3>
+          <p style="font-size: 0.9rem; margin-bottom: 1rem">
+            Import existing markdown recipes into the database
+          </p>
+          <button class="btn btn-primary" onclick="importRecipes()">
+            Import from Markdown
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div id="recipeGrid" class="recipe-grid">
+          <div class="loading">Loading recipes...</div>
+        </div>
+      </main>
+    </div>
+
+    <div class="recipe-modal" id="recipeModal">
+      <div class="recipe-detail">
+        <button class="close-modal" onclick="closeRecipeModal()">
+          &times;
+        </button>
+        <div id="recipeDetailContent"></div>
+      </div>
+    </div>
+
+    <script>
+      let recipes = [];
+      let categories = [];
+      let currentRecipe = null;
+      let currentCategory = 'all';
+      let scaleFactor = 1;
+
+      // Load initial data
+      async function loadData() {
+        await Promise.all([loadRecipes(), loadCategories()]);
+      }
+
+      async function loadRecipes() {
+        try {
+          const response = await fetch('/api/recipes');
+          const data = await response.json();
+          if (data.success) {
+            recipes = data.recipes;
+            renderRecipes();
+            updateCounts();
+          }
+        } catch (error) {
+          console.error('Error loading recipes:', error);
+        }
+      }
+
+      async function loadCategories() {
+        try {
+          const response = await fetch('/api/categories');
+          const data = await response.json();
+          if (data.success) {
+            categories = data.categories;
+            renderCategories();
+          }
+        } catch (error) {
+          console.error('Error loading categories:', error);
+        }
+      }
+
+      function renderCategories() {
+        const categoryList = document.getElementById('categoryList');
+        const allCategory = categoryList.querySelector('[data-category="all"]');
+
+        // Clear existing categories except "All"
+        categoryList.innerHTML = '';
+        categoryList.appendChild(allCategory);
+
+        categories.forEach(category => {
+          const count = recipes.filter(
+            r => r.category_id === category.id
+          ).length;
+          const item = document.createElement('div');
+          item.className = `category-item ${
+            currentCategory === category.id ? 'active' : ''
+          }`;
+          item.dataset.category = category.id;
+          item.innerHTML = `
+                    <div class="category-color" style="background: ${category.color};"></div>
+                    <span>${category.name}</span>
+                    <span class="category-count">${count}</span>
+                `;
+          item.onclick = () => filterByCategory(category.id);
+          categoryList.appendChild(item);
+        });
+      }
+
+      function renderRecipes() {
+        const grid = document.getElementById('recipeGrid');
+        let filteredRecipes = recipes;
+
+        // Filter by category
+        if (currentCategory !== 'all') {
+          filteredRecipes = filteredRecipes.filter(
+            r => r.category_id == currentCategory
+          );
+        }
+
+        // Filter by search
+        const searchTerm = document
+          .getElementById('searchInput')
+          .value.toLowerCase();
+        if (searchTerm) {
+          filteredRecipes = filteredRecipes.filter(
+            r =>
+              r.title.toLowerCase().includes(searchTerm) ||
+              (r.cuisine && r.cuisine.toLowerCase().includes(searchTerm)) ||
+              (r.tags && r.tags.toLowerCase().includes(searchTerm))
+          );
+        }
+
+        if (filteredRecipes.length === 0) {
+          grid.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No recipes found</h3>
+                        <p>Try adjusting your filters or search terms</p>
+                    </div>
+                `;
+          return;
+        }
+
+        grid.innerHTML = filteredRecipes
+          .map(
+            recipe => `
+                <div class="recipe-card" onclick="viewRecipe(${recipe.id})">
+                    <div class="recipe-card-header">
+                        <h3 class="recipe-title">${recipe.title}</h3>
+                        <div class="recipe-meta">
+                            ${
+                              recipe.servings
+                                ? `<div class="recipe-meta-item">👥 ${recipe.servings}</div>`
+                                : ''
+                            }
+                            ${
+                              recipe.prep_time
+                                ? `<div class="recipe-meta-item">⏱️ Prep: ${recipe.prep_time}</div>`
+                                : ''
+                            }
+                            ${
+                              recipe.cook_time
+                                ? `<div class="recipe-meta-item">🔥 Cook: ${recipe.cook_time}</div>`
+                                : ''
+                            }
+                        </div>
+                    </div>
+                    ${
+                      recipe.tags
+                        ? `
+                        <div class="recipe-tags">
+                            ${recipe.tags
+                              .split(',')
+                              .map(tag => `<span class="tag">${tag}</span>`)
+                              .join('')}
+                        </div>
+                    `
+                        : ''
+                    }
+                </div>
+            `
+          )
+          .join('');
+      }
+
+      async function viewRecipe(id) {
+        try {
+          const response = await fetch(`/api/recipe/${id}`);
+          const data = await response.json();
+          if (data.success) {
+            currentRecipe = data.recipe;
+            scaleFactor = 1;
+            renderRecipeDetail();
+            document.getElementById('recipeModal').classList.add('active');
+          }
+        } catch (error) {
+          console.error('Error loading recipe:', error);
+        }
+      }
+
+      function renderRecipeDetail() {
+        if (!currentRecipe) return;
+
+        const originalServings = parseServings(currentRecipe.servings);
+        const hasServings = originalServings !== null;
+
+        const content = document.getElementById('recipeDetailContent');
+        content.innerHTML = `
+                <div class="recipe-detail-header">
+                    <h1 class="recipe-detail-title">${currentRecipe.title}</h1>
+                    <div class="recipe-detail-meta">
+                        ${
+                          currentRecipe.cuisine
+                            ? `<div>🍽️ ${currentRecipe.cuisine}</div>`
+                            : ''
+                        }
+                        ${
+                          currentRecipe.course
+                            ? `<div>📍 ${currentRecipe.course}</div>`
+                            : ''
+                        }
+                        ${
+                          currentRecipe.servings
+                            ? `<div>👥 ${currentRecipe.servings}</div>`
+                            : ''
+                        }
+                        ${
+                          currentRecipe.prep_time
+                            ? `<div>⏱️ Prep: ${currentRecipe.prep_time}</div>`
+                            : ''
+                        }
+                        ${
+                          currentRecipe.cook_time
+                            ? `<div>🔥 Cook: ${currentRecipe.cook_time}</div>`
+                            : ''
+                        }
+                    </div>
+                    <div class="recipe-detail-actions">
+                        <button class="btn btn-primary" onclick="exportRecipe(${
+                          currentRecipe.id
+                        })">
+                            📄 Export to Markdown
+                        </button>
+                        <button class="btn btn-secondary" onclick="editCategory(${
+                          currentRecipe.id
+                        })">
+                            📁 Change Category
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteRecipe(${
+                          currentRecipe.id
+                        })">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="recipe-content">
+                    <div class="recipe-section">
+                        <h3>
+                            Ingredients
+                            ${
+                              hasServings
+                                ? `
+                              <div class="scale-controls">
+                                  <label style="margin-right: 10px">Scale to:</label>
+                                  <input type="number"
+                                         id="servingsInput"
+                                         value="${originalServings}"
+                                         min="1"
+                                         style="width: 60px; padding: 4px; text-align: center;"
+                                         onchange="scaleToServings(this.value)">
+                                  <span style="margin-left: 10px">servings</span>
+                              </div>
+                            `
+                                : `
+                              <div class="scale-controls">
+                                  <button class="scale-btn" onclick="changeScale(-0.5)">-</button>
+                                  <span class="scale-display">${scaleFactor}x</span>
+                                  <button class="scale-btn" onclick="changeScale(0.5)">+</button>
+                              </div>
+                            `
+                            }
+                        </h3>
+                        <ul class="ingredients-list" id="ingredientsList">
+                            ${renderIngredients()}
+                        </ul>
+                    </div>
+
+                    ${
+                      currentRecipe.instructions.length > 0
+                        ? `
+                        <div class="recipe-section">
+                            <h3>Instructions</h3>
+                            <ol class="instructions-list">
+                                ${currentRecipe.instructions
+                                  .map(
+                                    inst => `
+                                    <li class="instruction-item">${inst.instruction}</li>
+                                `
+                                  )
+                                  .join('')}
+                            </ol>
+                        </div>
+                    `
+                        : ''
+                    }
+
+                    ${
+                      currentRecipe.source_url
+                        ? `
+                        <div class="recipe-section">
+                            <h3>Source</h3>
+                            <a href="${currentRecipe.source_url}" target="_blank" class="btn btn-secondary">
+                                View Original Recipe →
+                            </a>
+                        </div>
+                    `
+                        : ''
+                    }
+                </div>
+            `;
+      }
+
+      function renderIngredients() {
+        if (!currentRecipe || !currentRecipe.ingredients) return '';
+
+        if (scaleFactor === 1) {
+          return currentRecipe.ingredients
+            .map(
+              (ing, idx) => `
+                    <li class="ingredient-item" data-index="${idx}">
+                        <input type="checkbox" class="ingredient-checkbox" onchange="toggleIngredient(${idx})">
+                        <span class="ingredient-text">${
+                          ing.display_text || ing.original_text
+                        }</span>
+                    </li>
+                `
+            )
+            .join('');
+        } else {
+          // Fetch scaled ingredients
+          fetchScaledIngredients();
+          return '<li>Calculating scaled amounts...</li>';
+        }
+      }
+
+      async function fetchScaledIngredients() {
+        try {
+          const response = await fetch(
+            `/api/recipe/${currentRecipe.id}/scale/${scaleFactor}`
+          );
+          const data = await response.json();
+          if (data.success) {
+            const list = document.getElementById('ingredientsList');
+            list.innerHTML = data.ingredients
+              .map(
+                (ing, idx) => `
+                        <li class="ingredient-item" data-index="${idx}">
+                            <input type="checkbox" class="ingredient-checkbox" onchange="toggleIngredient(${idx})">
+                            <span class="ingredient-text">${
+                              ing.scaled_text || ing.original_text
+                            }</span>
+                        </li>
+                    `
+              )
+              .join('');
+          }
+        } catch (error) {
+          console.error('Error scaling ingredients:', error);
+        }
+      }
+
+      function changeScale(delta) {
+        scaleFactor = Math.max(0.5, Math.min(10, scaleFactor + delta));
+        document.querySelector(
+          '.scale-display'
+        ).textContent = `${scaleFactor}x`;
+        document.getElementById('ingredientsList').innerHTML =
+          renderIngredients();
+      }
+
+      function parseServings(servingsText) {
+        if (!servingsText) return null;
+        const match = servingsText.match(/(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[1]) : null;
+      }
+
+      async function scaleToServings(desiredServings) {
+        const servings = parseFloat(desiredServings);
+        if (isNaN(servings) || servings <= 0) return;
+
+        try {
+          const response = await fetch(
+            `/api/recipe/${currentRecipe.id}/scale-to-servings/${servings}`
+          );
+          const data = await response.json();
+          if (data.success) {
+            scaleFactor = data.scaleFactor;
+            const list = document.getElementById('ingredientsList');
+            list.innerHTML = data.ingredients
+              .map(
+                (ing, idx) => `
+                        <li class="ingredient-item" data-index="${idx}">
+                            <input type="checkbox" class="ingredient-checkbox" onchange="toggleIngredient(${idx})">
+                            <span class="ingredient-text">${
+                              ing.scaled_text || ing.original_text
+                            }</span>
+                        </li>
+                    `
+              )
+              .join('');
+          }
+        } catch (error) {
+          console.error('Error scaling ingredients:', error);
+        }
+      }
+
+      function toggleIngredient(index) {
+        const item = document.querySelector(`[data-index="${index}"]`);
+        item.classList.toggle('checked');
+      }
+
+      function closeRecipeModal() {
+        document.getElementById('recipeModal').classList.remove('active');
+        currentRecipe = null;
+        scaleFactor = 1;
+      }
+
+      function filterByCategory(categoryId) {
+        currentCategory = categoryId;
+        document.querySelectorAll('.category-item').forEach(item => {
+          item.classList.toggle('active', item.dataset.category == categoryId);
+        });
+        renderRecipes();
+      }
+
+      function updateCounts() {
+        document.getElementById('allCount').textContent = recipes.length;
+        renderCategories();
+      }
+
+      async function importRecipes() {
+        if (!confirm('Import all markdown recipes into the database?')) return;
+
+        try {
+          const response = await fetch('/api/import-markdown', {
+            method: 'POST',
+          });
+          const data = await response.json();
+          if (data.success) {
+            alert(
+              `Successfully imported ${data.imported} of ${data.total} recipes`
+            );
+            loadData();
+          }
+        } catch (error) {
+          alert('Error importing recipes');
+        }
+      }
+
+      async function exportRecipe(id) {
+        try {
+          const response = await fetch(`/api/recipe/${id}/export`);
+          const data = await response.json();
+          if (data.success) {
+            const blob = new Blob([data.markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentRecipe.title
+              .replace(/[^a-z0-9]/gi, '-')
+              .toLowerCase()}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        } catch (error) {
+          alert('Error exporting recipe');
+        }
+      }
+
+      async function deleteRecipe(id) {
+        if (!confirm('Are you sure you want to delete this recipe?')) return;
+
+        try {
+          const response = await fetch(`/api/recipe/${id}`, {
+            method: 'DELETE',
+          });
+          const data = await response.json();
+          if (data.success) {
+            closeRecipeModal();
+            loadData();
+          }
+        } catch (error) {
+          alert('Error deleting recipe');
+        }
+      }
+
+      function showCategoryModal() {
+        const name = prompt('Category name:');
+        if (!name) return;
+
+        const color = prompt('Category color (hex):', '#4CAF50');
+        if (!color) return;
+
+        createCategory(name, color);
+      }
+
+      async function createCategory(name, color) {
+        try {
+          const response = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, color }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            loadCategories();
+          }
+        } catch (error) {
+          alert('Error creating category');
+        }
+      }
+
+      async function editCategory(recipeId) {
+        const categoryId = prompt('Enter category ID (leave empty to remove):');
+
+        try {
+          const response = await fetch(`/api/recipe/${recipeId}/category`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              categoryId: categoryId ? parseInt(categoryId) : null,
+            }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            loadData();
+            closeRecipeModal();
+          }
+        } catch (error) {
+          alert('Error updating category');
+        }
+      }
+
+      // Search functionality
+      let searchTimeout;
+      document.getElementById('searchInput').addEventListener('input', e => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          renderRecipes();
+        }, 300);
+      });
+
+      // Close modal on outside click
+      document.getElementById('recipeModal').addEventListener('click', e => {
+        if (e.target.id === 'recipeModal') {
+          closeRecipeModal();
+        }
+      });
+
+      // Load data on page load
+      loadData();
+    </script>
+  </body>
+</html>
