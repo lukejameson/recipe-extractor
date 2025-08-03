@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe Extractor</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: #f5f5f5;
+        padding: 20px;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      h1 {
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .logout-btn {
+        padding: 8px 16px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .logout-btn:hover {
+        background-color: #d32f2f;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+
+      @media (max-width: 768px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-weight: 500;
+      }
+
+      input[type='url'] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+
+      input[type='url']:focus {
+        outline: none;
+        border-color: #4caf50;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      input[type='checkbox'] {
+        margin-right: 8px;
+      }
+
+      button {
+        padding: 12px 24px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .error {
+        color: #d32f2f;
+        margin-top: 10px;
+      }
+
+      .success {
+        color: #388e3c;
+        margin-top: 10px;
+      }
+
+      .result {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: #f8f8f8;
+        border-radius: 5px;
+        display: none;
+      }
+
+      .result h3 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .result pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 14px;
+        max-height: 400px;
+        overflow-y: auto;
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+      }
+
+      .recipes-list {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      .recipe-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .recipe-item:hover {
+        background-color: #f5f5f5;
+      }
+
+      .recipe-item:last-child {
+        border-bottom: none;
+      }
+
+      .recipe-title {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .recipe-date {
+        font-size: 14px;
+        color: #666;
+      }
+
+      .loading {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #4caf50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 50px auto;
+        padding: 20px;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 20px;
+      }
+
+      .close:hover {
+        color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><span>🍳</span> Recipe Extractor</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
+      </header>
+
+      <div class="main-content">
+        <div class="card">
+          <h2>Extract Recipe</h2>
+          <form id="extractForm">
+            <div class="form-group">
+              <label for="url">Recipe URL</label>
+              <input
+                type="url"
+                id="url"
+                name="url"
+                placeholder="https://example.com/recipe"
+                required
+              />
+            </div>
+
+            <div class="checkbox-group">
+              <input type="checkbox" id="useAdvanced" name="useAdvanced" />
+              <label for="useAdvanced"
+                >Use advanced extractor (requires jsdom)</label
+              >
+            </div>
+
+            <button type="submit">Extract Recipe</button>
+
+            <div class="loading" id="loading">
+              <div class="spinner"></div>
+              <span>Extracting recipe...</span>
+            </div>
+
+            <div id="message"></div>
+
+            <div class="result" id="result">
+              <h3 id="resultTitle"></h3>
+              <p>Saved as: <strong id="resultFilename"></strong></p>
+              <pre id="resultContent"></pre>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Saved Recipes</h2>
+          <div class="recipes-list" id="recipesList">
+            <p>Loading recipes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="recipeModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">Recipe</h2>
+          <span class="close">&times;</span>
+        </div>
+        <pre id="modalContent"></pre>
+      </div>
+    </div>
+
+    <script>
+      const extractForm = document.getElementById('extractForm');
+      const loadingDiv = document.getElementById('loading');
+      const messageDiv = document.getElementById('message');
+      const resultDiv = document.getElementById('result');
+      const recipesList = document.getElementById('recipesList');
+      const modal = document.getElementById('recipeModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalContent = document.getElementById('modalContent');
+      const closeModal = document.querySelector('.close');
+
+      // Load saved recipes
+      async function loadRecipes() {
+        try {
+          const response = await fetch('/recipes');
+          const data = await response.json();
+
+          if (data.success) {
+            if (data.recipes.length === 0) {
+              recipesList.innerHTML = '<p>No recipes saved yet.</p>';
+            } else {
+              recipesList.innerHTML = data.recipes
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                .map(
+                  recipe => `
+                                <div class="recipe-item" data-filename="${
+                                  recipe.filename
+                                }">
+                                    <div class="recipe-title">${
+                                      recipe.title
+                                    }</div>
+                                    <div class="recipe-date">${
+                                      recipe.date || 'No date'
+                                    }</div>
+                                </div>
+                            `
+                )
+                .join('');
+
+              // Add click handlers
+              document.querySelectorAll('.recipe-item').forEach(item => {
+                item.addEventListener('click', () => {
+                  viewRecipe(item.dataset.filename);
+                });
+              });
+            }
+          } else {
+            recipesList.innerHTML = '<p>Error loading recipes.</p>';
+          }
+        } catch (error) {
+          recipesList.innerHTML = '<p>Error loading recipes.</p>';
+        }
+      }
+
+      // View recipe
+      async function viewRecipe(filename) {
+        try {
+          const response = await fetch(`/recipe/${filename}`);
+          const data = await response.json();
+
+          if (data.success) {
+            const titleMatch = data.content.match(/title:\s*'([^']+)'/);
+            modalTitle.textContent = titleMatch
+              ? titleMatch[1]
+              : filename.replace('.md', '');
+            modalContent.textContent = data.content;
+            modal.style.display = 'block';
+          }
+        } catch (error) {
+          alert('Error loading recipe');
+        }
+      }
+
+      // Extract recipe
+      extractForm.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        const url = document.getElementById('url').value;
+        const useAdvanced = document.getElementById('useAdvanced').checked;
+
+        messageDiv.innerHTML = '';
+        messageDiv.className = '';
+        resultDiv.style.display = 'none';
+        loadingDiv.style.display = 'flex';
+        extractForm.querySelector('button').disabled = true;
+
+        try {
+          const response = await fetch('/extract', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url, useAdvanced }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            messageDiv.className = 'success';
+            messageDiv.textContent = 'Recipe extracted successfully!';
+
+            document.getElementById('resultTitle').textContent = data.title;
+            document.getElementById('resultFilename').textContent =
+              data.filename;
+            document.getElementById('resultContent').textContent = data.content;
+            resultDiv.style.display = 'block';
+
+            // Reload recipes list
+            loadRecipes();
+
+            // Clear the URL input
+            document.getElementById('url').value = '';
+          } else {
+            messageDiv.className = 'error';
+            messageDiv.textContent = data.error || 'Failed to extract recipe';
+            if (data.details) {
+              messageDiv.textContent += '\n' + data.details;
+            }
+          }
+        } catch (error) {
+          messageDiv.className = 'error';
+          messageDiv.textContent = 'Connection error. Please try again.';
+        } finally {
+          loadingDiv.style.display = 'none';
+          extractForm.querySelector('button').disabled = false;
+        }
+      });
+
+      // Modal close handler
+      closeModal.onclick = function () {
+        modal.style.display = 'none';
+      };
+
+      window.onclick = function (event) {
+        if (event.target == modal) {
+          modal.style.display = 'none';
+        }
+      };
+
+      // Load recipes on page load
+      loadRecipes();
+    </script>
+  </body>
+</html>

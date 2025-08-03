@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  recipe-extractor:
+    build: .
+    container_name: recipe-extractor
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - APP_PASSWORD=${APP_PASSWORD:-recipe123}
+      - SAVE_PATH=/recipes
+      - SESSION_SECRET=${SESSION_SECRET:-defaultsecret}
+    volumes:
+      - ./recipes:/recipes
+    restart: unless-stopped
