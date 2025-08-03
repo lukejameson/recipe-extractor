@@ -1,20 +1,17 @@
-FROM node:18-alpine
+FROM node:18-slim
 
 # Install dependencies for jsdom and better-sqlite3
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
   python3 \
   python3-dev \
-  py3-pip \
-  make \
-  g++ \
-  cairo-dev \
-  jpeg-dev \
-  pango-dev \
-  giflib-dev \
-  sqlite-dev
-
-# Install distutils for node-gyp
-RUN pip3 install setuptools
+  python3-pip \
+  build-essential \
+  libcairo2-dev \
+  libjpeg-dev \
+  libpango1.0-dev \
+  libgif-dev \
+  libsqlite3-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app
