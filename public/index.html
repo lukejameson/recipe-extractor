@@ -3,8 +3,51 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Recipe Extractor</title>
+    <title>Recipe Extractor - OnlyRecipe</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%23ffffff'%3E🍳%3C/text%3E%3C/svg%3E"
+    />
     <style>
+      :root {
+        --primary-color: #3b82f6;
+        --primary-hover: #2563eb;
+        --success-color: #10b981;
+        --success-hover: #059669;
+        --danger-color: #ef4444;
+        --danger-hover: #dc2626;
+        --warning-color: #f59e0b;
+        --gray-50: #0f0f0f;
+        --gray-100: #171717;
+        --gray-200: #262626;
+        --gray-300: #404040;
+        --gray-400: #525252;
+        --gray-500: #737373;
+        --gray-600: #a3a3a3;
+        --gray-700: #d4d4d4;
+        --gray-800: #e5e5e5;
+        --gray-900: #f5f5f5;
+        --bg-primary: #0a0a0a;
+        --bg-secondary: #111111;
+        --bg-tertiary: #1a1a1a;
+        --surface: rgba(255, 255, 255, 0.05);
+        --surface-hover: rgba(255, 255, 255, 0.08);
+        --border: rgba(255, 255, 255, 0.1);
+        --border-hover: rgba(255, 255, 255, 0.2);
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4),
+          0 2px 4px -2px rgb(0 0 0 / 0.4);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5),
+          0 4px 6px -4px rgb(0 0 0 / 0.5);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6),
+          0 8px 10px -6px rgb(0 0 0 / 0.6);
+        --border-radius: 0.75rem;
+        --border-radius-lg: 1rem;
+        --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -12,209 +55,244 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          Helvetica, Arial, sans-serif;
-        background-color: #f5f5f5;
-        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+          'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue',
+          sans-serif;
+        background: var(--bg-primary);
+        color: var(--gray-700);
+        line-height: 1.6;
         min-height: 100vh;
+        font-size: 16px;
       }
 
       .container {
         max-width: 1200px;
         margin: 0 auto;
+        padding: 1.5rem;
       }
 
-      header {
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        margin-bottom: 30px;
+      /* Header */
+      .header {
+        background: var(--surface);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
       }
 
-      h1 {
-        color: #333;
+      .logo {
         display: flex;
         align-items: center;
-        gap: 10px;
-      }
-
-      .logout-btn {
-        padding: 8px 16px;
-        background-color: #f44336;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+        gap: 0.75rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
         text-decoration: none;
-        font-size: 14px;
       }
 
-      .logout-btn:hover {
-        background-color: #d32f2f;
+      .logo-icon {
+        font-size: 2rem;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--success-color)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
       }
 
+      .nav-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        border: none;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn-primary {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .btn-success {
+        background: var(--success-color);
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: var(--success-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .btn-danger {
+        background: var(--danger-color);
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: var(--danger-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--gray-700);
+        border: 1px solid var(--border);
+      }
+
+      .btn-secondary:hover {
+        background: var(--surface-hover);
+        border-color: var(--border-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      /* Main Content */
       .main-content {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 30px;
-      }
-
-      @media (max-width: 768px) {
-        .main-content {
-          grid-template-columns: 1fr;
-        }
+        gap: 2rem;
       }
 
       .card {
-        background: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: var(--surface);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
       }
 
-      h2 {
-        color: #333;
-        margin-bottom: 20px;
+      .card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+        border-color: var(--border-hover);
       }
 
+      .card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .card-icon {
+        font-size: 1.75rem;
+      }
+
+      /* Form Styles */
       .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 1.5rem;
       }
 
-      label {
+      .form-label {
         display: block;
-        margin-bottom: 5px;
-        color: #555;
+        margin-bottom: 0.5rem;
+        color: var(--gray-700);
         font-weight: 500;
+        font-size: 0.875rem;
       }
 
-      input[type='url'] {
+      .form-input {
         width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 16px;
-        transition: border-color 0.3s;
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--border);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: var(--transition);
+        background: var(--bg-secondary);
+        color: var(--gray-700);
       }
 
-      input[type='url']:focus {
+      .form-input:focus {
         outline: none;
-        border-color: #4caf50;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+        background: var(--bg-tertiary);
+      }
+
+      .form-input::placeholder {
+        color: var(--gray-500);
       }
 
       .checkbox-group {
         display: flex;
         align-items: center;
-        margin-bottom: 20px;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border);
       }
 
-      input[type='checkbox'] {
-        margin-right: 8px;
+      .checkbox {
+        width: 1.125rem;
+        height: 1.125rem;
+        accent-color: var(--primary-color);
       }
 
-      button {
-        padding: 12px 24px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        font-weight: 500;
+      .checkbox-label {
+        color: var(--gray-700);
+        font-size: 0.875rem;
         cursor: pointer;
-        transition: background-color 0.3s;
       }
 
-      button:hover {
-        background-color: #45a049;
-      }
-
-      button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-
-      .error {
-        color: #d32f2f;
-        margin-top: 10px;
-      }
-
-      .success {
-        color: #388e3c;
-        margin-top: 10px;
-      }
-
-      .result {
-        margin-top: 20px;
-        padding: 20px;
-        background-color: #f8f8f8;
-        border-radius: 5px;
-        display: none;
-      }
-
-      .result h3 {
-        color: #333;
-        margin-bottom: 10px;
-      }
-
-      .result pre {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-size: 14px;
-        max-height: 400px;
-        overflow-y: auto;
-        background: white;
-        padding: 15px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-      }
-
-      .recipes-list {
-        max-height: 500px;
-        overflow-y: auto;
-      }
-
-      .recipe-item {
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-
-      .recipe-item:hover {
-        background-color: #f5f5f5;
-      }
-
-      .recipe-item:last-child {
-        border-bottom: none;
-      }
-
-      .recipe-title {
-        font-weight: 500;
-        color: #333;
-        margin-bottom: 5px;
-      }
-
-      .recipe-date {
-        font-size: 14px;
-        color: #666;
-      }
-
+      /* Loading States */
       .loading {
         display: none;
         align-items: center;
-        gap: 10px;
-        margin-top: 10px;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border);
+        color: var(--gray-600);
+      }
+
+      .loading.show {
+        display: flex;
       }
 
       .spinner {
-        width: 20px;
-        height: 20px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #4caf50;
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid var(--border);
+        border-top: 2px solid var(--primary-color);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
@@ -228,155 +306,536 @@
         }
       }
 
-      .modal {
+      /* Messages */
+      .message {
+        padding: 1rem 1.25rem;
+        border-radius: var(--border-radius);
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
         display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
       }
 
-      .modal-content {
-        background-color: white;
-        margin: 50px auto;
-        padding: 20px;
-        border-radius: 10px;
-        width: 90%;
-        max-width: 800px;
-        max-height: 80vh;
+      .message.show {
+        display: block;
+      }
+
+      .message.success {
+        background: rgb(34 197 94 / 0.1);
+        color: var(--success-color);
+        border: 1px solid rgb(34 197 94 / 0.2);
+      }
+
+      .message.error {
+        background: rgb(239 68 68 / 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgb(239 68 68 / 0.2);
+      }
+
+      /* Result Display */
+      .result {
+        margin-top: 1.5rem;
+        display: none;
+      }
+
+      .result.show {
+        display: block;
+      }
+
+      .result-header {
+        background: var(--bg-secondary);
+        padding: 1rem 1.25rem;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        border: 1px solid var(--border);
+        border-bottom: none;
+      }
+
+      .result-title {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.25rem;
+      }
+
+      .result-filename {
+        color: var(--gray-600);
+        font-size: 0.875rem;
+      }
+
+      .result-content {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        max-height: 400px;
         overflow-y: auto;
       }
 
+      .result-pre {
+        margin: 0;
+        padding: 1.25rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--gray-600);
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+          'Courier New', monospace;
+      }
+
+      /* Recipe List */
+      .recipes-list {
+        max-height: 500px;
+        overflow-y: auto;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+      }
+
+      .recipe-item {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: var(--transition);
+        background: transparent;
+      }
+
+      .recipe-item:hover {
+        background: var(--surface-hover);
+      }
+
+      .recipe-item:last-child {
+        border-bottom: none;
+      }
+
+      .recipe-title {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.25rem;
+      }
+
+      .recipe-date {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+      }
+
+      /* API Section */
+      .api-card {
+        grid-column: span 2;
+        background: linear-gradient(135deg, var(--gray-900), var(--gray-800));
+        color: white;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .api-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(
+          circle,
+          rgba(37, 99, 235, 0.3) 0%,
+          transparent 70%
+        );
+      }
+
+      .api-card .card-title {
+        color: white;
+      }
+
+      .api-section {
+        margin-bottom: 1.5rem;
+      }
+
+      .api-section h4 {
+        color: var(--gray-300);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .token-group {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .token-input {
+        flex: 1;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--border-radius);
+        color: white;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+          'Courier New', monospace;
+        font-size: 0.875rem;
+      }
+
+      .token-input:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .code-block {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+          'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--gray-300);
+        overflow-x: auto;
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        padding: 2rem;
+      }
+
+      .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-content {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-xl);
+        width: 100%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+      }
+
       .modal-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        background: var(--surface);
+        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
       }
 
-      .close {
-        color: #aaa;
-        font-size: 28px;
-        font-weight: bold;
+      .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+      }
+
+      .modal-close {
+        width: 2rem;
+        height: 2rem;
+        border: none;
+        background: var(--surface);
+        font-size: 1.5rem;
+        color: var(--gray-600);
         cursor: pointer;
-        line-height: 20px;
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
       }
 
-      .close:hover {
-        color: #000;
+      .modal-close:hover {
+        background: var(--surface-hover);
+        color: var(--gray-800);
+        border-color: var(--border-hover);
+      }
+
+      .modal-body {
+        padding: 2rem;
+        background: var(--bg-tertiary);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1024px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+
+        .api-card {
+          grid-column: span 1;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 1rem;
+        }
+
+        .header {
+          padding: 1.25rem;
+          text-align: center;
+        }
+
+        .nav-actions {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .card {
+          padding: 1.5rem;
+        }
+
+        .card-title {
+          font-size: 1.25rem;
+        }
+
+        .token-group {
+          flex-direction: column;
+        }
+
+        .modal {
+          padding: 1rem;
+        }
+
+        .modal-header,
+        .modal-body {
+          padding: 1.5rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .logo {
+          font-size: 1.25rem;
+        }
+
+        .card {
+          padding: 1rem;
+        }
+
+        .btn {
+          padding: 0.625rem 1rem;
+          font-size: 0.8125rem;
+        }
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .card,
+      .message,
+      .result {
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--gray-100);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--gray-300);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--gray-400);
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <header>
-        <h1><span>🍳</span> Recipe Extractor</h1>
-        <div style="display: flex; gap: 1rem">
-          <a href="/" class="logout-btn" style="background: #4caf50"
-            >← Back to Recipes</a
-          >
-          <a href="/logout" class="logout-btn">Logout</a>
+      <!-- Header -->
+      <header class="header">
+        <a href="/" class="logo">
+          <span class="logo-icon">🍳</span>
+          <span>OnlyRecipe</span>
+        </a>
+        <div class="nav-actions">
+          <a href="/" class="btn btn-secondary">
+            <span>📖</span>
+            Recipe Viewer
+          </a>
+          <a href="/logout" class="btn btn-danger">
+            <span>🚪</span>
+            Logout
+          </a>
         </div>
       </header>
 
+      <!-- Main Content -->
       <div class="main-content">
+        <!-- Extract Recipe Card -->
         <div class="card">
-          <h2>Extract Recipe</h2>
+          <h2 class="card-title">
+            <span class="card-icon">🔍</span>
+            Extract Recipe
+          </h2>
+
           <form id="extractForm">
             <div class="form-group">
-              <label for="url">Recipe URL</label>
+              <label for="url" class="form-label">Recipe URL</label>
               <input
                 type="url"
                 id="url"
                 name="url"
+                class="form-input"
                 placeholder="https://example.com/recipe"
                 required
               />
             </div>
 
             <div class="checkbox-group">
-              <input type="checkbox" id="useAdvanced" name="useAdvanced" />
-              <label for="useAdvanced"
-                >Use advanced extractor (requires jsdom)</label
-              >
+              <input
+                type="checkbox"
+                id="useAdvanced"
+                name="useAdvanced"
+                class="checkbox"
+              />
+              <label for="useAdvanced" class="checkbox-label">
+                Use advanced extractor (handles complex sites)
+              </label>
             </div>
 
-            <button type="submit">Extract Recipe</button>
+            <button type="submit" class="btn btn-success" style="width: 100%">
+              <span>✨</span>
+              Extract Recipe
+            </button>
 
             <div class="loading" id="loading">
               <div class="spinner"></div>
               <span>Extracting recipe...</span>
             </div>
 
-            <div id="message"></div>
+            <div id="message" class="message"></div>
 
             <div class="result" id="result">
-              <h3 id="resultTitle"></h3>
-              <p>Saved as: <strong id="resultFilename"></strong></p>
-              <pre id="resultContent"></pre>
+              <div class="result-header">
+                <div class="result-title" id="resultTitle"></div>
+                <div class="result-filename">
+                  Saved as: <strong id="resultFilename"></strong>
+                </div>
+              </div>
+              <div class="result-content">
+                <pre class="result-pre" id="resultContent"></pre>
+              </div>
             </div>
           </form>
         </div>
 
+        <!-- Saved Recipes Card -->
         <div class="card">
-          <h2>Saved Recipes</h2>
+          <h2 class="card-title">
+            <span class="card-icon">📚</span>
+            Saved Recipes
+          </h2>
+
           <div class="recipes-list" id="recipesList">
-            <p>Loading recipes...</p>
+            <div class="recipe-item">
+              <div class="loading">
+                <div class="spinner"></div>
+                <span>Loading recipes...</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="card" style="grid-column: span 2">
-          <h2>API Access for iOS Shortcuts</h2>
-          <p>
-            Use this API token to extract recipes from iOS Shortcuts or other
-            apps:
+        <!-- API Access Card -->
+        <div class="card api-card">
+          <h2 class="card-title">
+            <span class="card-icon">🔌</span>
+            API Access
+          </h2>
+
+          <p style="margin-bottom: 1.5rem; color: var(--gray-300)">
+            Use this API to extract recipes from iOS Shortcuts, automation
+            tools, or other applications.
           </p>
-          <div style="margin: 20px 0">
-            <label style="font-weight: bold">API Token:</label>
-            <div style="display: flex; gap: 10px; margin-top: 10px">
+
+          <div class="api-section">
+            <h4>API Token</h4>
+            <div class="token-group">
               <input
                 type="text"
                 id="apiToken"
+                class="token-input"
                 readonly
-                style="flex: 1; font-family: monospace"
+                placeholder="Loading token..."
               />
-              <button onclick="copyApiToken()" style="padding: 8px 16px">
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="copyApiToken()"
+              >
+                <span>📋</span>
                 Copy
               </button>
             </div>
           </div>
-          <p><strong>Endpoint:</strong> <code>POST /api/extract</code></p>
-          <p><strong>Headers:</strong></p>
-          <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px">
-Authorization: Bearer YOUR_API_TOKEN
-Content-Type: application/json</pre
-          >
-          <p><strong>Body:</strong></p>
-          <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px">
-{
-  "url": "https://recipe-website.com/recipe",
-  "useAdvanced": true,
-  "returnContent": true
-}</pre
-          >
+
+          <div class="api-section">
+            <h4>Endpoint</h4>
+            <div class="code-block">POST /api/extract</div>
+          </div>
+
+          <div class="api-section">
+            <h4>Headers</h4>
+            <div class="code-block">
+              Authorization: Bearer YOUR_API_TOKEN Content-Type:
+              application/json
+            </div>
+          </div>
+
+          <div class="api-section">
+            <h4>Request Body</h4>
+            <div class="code-block">
+              { "url": "https://recipe-website.com/recipe", "useAdvanced": true,
+              "returnContent": true }
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Recipe Modal -->
     <div id="recipeModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 id="modalTitle">Recipe</h2>
-          <span class="close">&times;</span>
+          <h3 class="modal-title" id="modalTitle">Recipe</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <pre id="modalContent"></pre>
+        <div class="modal-body">
+          <pre class="result-pre" id="modalContent"></pre>
+        </div>
       </div>
     </div>
 
     <script>
+      // DOM Elements
       const extractForm = document.getElementById('extractForm');
       const loadingDiv = document.getElementById('loading');
       const messageDiv = document.getElementById('message');
@@ -385,7 +844,25 @@ Content-Type: application/json</pre
       const modal = document.getElementById('recipeModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalContent = document.getElementById('modalContent');
-      const closeModal = document.querySelector('.close');
+
+      // Utility Functions
+      function showElement(element, className = 'show') {
+        element.classList.add(className);
+      }
+
+      function hideElement(element, className = 'show') {
+        element.classList.remove(className);
+      }
+
+      function showMessage(message, type = 'success') {
+        messageDiv.textContent = message;
+        messageDiv.className = `message ${type} show`;
+      }
+
+      function hideMessage() {
+        hideElement(messageDiv);
+        messageDiv.className = 'message';
+      }
 
       // Load saved recipes
       async function loadRecipes() {
@@ -395,72 +872,87 @@ Content-Type: application/json</pre
 
           if (data.success) {
             if (data.recipes.length === 0) {
-              recipesList.innerHTML = '<p>No recipes saved yet.</p>';
+              recipesList.innerHTML = `
+                <div class="recipe-item" style="text-align: center; color: var(--gray-500);">
+                  <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">📝</span>
+                  No recipes saved yet
+                </div>
+              `;
             } else {
               recipesList.innerHTML = data.recipes
                 .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
                 .map(
                   recipe => `
-                                <div class="recipe-item" data-filename="${
-                                  recipe.filename
-                                }">
-                                    <div class="recipe-title">${
-                                      recipe.title
-                                    }</div>
-                                    <div class="recipe-date">${
-                                      recipe.date || 'No date'
-                                    }</div>
-                                </div>
-                            `
+                  <div class="recipe-item" data-filename="${
+                    recipe.filename
+                  }" onclick="viewRecipe('${recipe.filename}')">
+                    <div class="recipe-title">${recipe.title}</div>
+                    <div class="recipe-date">${recipe.date || 'No date'}</div>
+                  </div>
+                `
                 )
                 .join('');
-
-              // Add click handlers
-              document.querySelectorAll('.recipe-item').forEach(item => {
-                item.addEventListener('click', () => {
-                  viewRecipe(item.dataset.filename);
-                });
-              });
             }
           } else {
-            recipesList.innerHTML = '<p>Error loading recipes.</p>';
+            recipesList.innerHTML = `
+              <div class="recipe-item" style="text-align: center; color: var(--danger-color);">
+                <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">⚠️</span>
+                Error loading recipes
+              </div>
+            `;
           }
         } catch (error) {
-          recipesList.innerHTML = '<p>Error loading recipes.</p>';
+          console.error('Error loading recipes:', error);
+          recipesList.innerHTML = `
+            <div class="recipe-item" style="text-align: center; color: var(--danger-color);">
+              <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">⚠️</span>
+              Error loading recipes
+            </div>
+          `;
         }
       }
 
-      // View recipe
+      // View recipe in modal
       async function viewRecipe(filename) {
         try {
           const response = await fetch(`/recipe/${filename}`);
           const data = await response.json();
 
           if (data.success) {
-            const titleMatch = data.content.match(/title:\s*'([^']+)'/);
+            const titleMatch = data.content.match(/title:\s*['"]([^'"]+)['"]/);
             modalTitle.textContent = titleMatch
               ? titleMatch[1]
               : filename.replace('.md', '');
             modalContent.textContent = data.content;
-            modal.style.display = 'block';
+            showElement(modal);
+          } else {
+            showMessage('Error loading recipe', 'error');
           }
         } catch (error) {
-          alert('Error loading recipe');
+          console.error('Error loading recipe:', error);
+          showMessage('Error loading recipe', 'error');
         }
       }
 
-      // Extract recipe
+      // Close modal
+      function closeModal() {
+        hideElement(modal);
+      }
+
+      // Extract recipe form handler
       extractForm.addEventListener('submit', async e => {
         e.preventDefault();
 
-        const url = document.getElementById('url').value;
+        const url = document.getElementById('url').value.trim();
         const useAdvanced = document.getElementById('useAdvanced').checked;
+        const submitBtn = extractForm.querySelector('button[type="submit"]');
 
-        messageDiv.innerHTML = '';
-        messageDiv.className = '';
-        resultDiv.style.display = 'none';
-        loadingDiv.style.display = 'flex';
-        extractForm.querySelector('button').disabled = true;
+        // Reset UI
+        hideMessage();
+        hideElement(resultDiv);
+        showElement(loadingDiv);
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.6';
 
         try {
           const response = await fetch('/extract', {
@@ -474,46 +966,35 @@ Content-Type: application/json</pre
           const data = await response.json();
 
           if (data.success) {
-            messageDiv.className = 'success';
-            messageDiv.textContent = 'Recipe extracted successfully!';
+            showMessage('Recipe extracted successfully! 🎉');
 
             document.getElementById('resultTitle').textContent = data.title;
             document.getElementById('resultFilename').textContent =
               data.filename;
             document.getElementById('resultContent').textContent = data.content;
-            resultDiv.style.display = 'block';
+            showElement(resultDiv);
 
             // Reload recipes list
-            loadRecipes();
+            await loadRecipes();
 
-            // Clear the URL input
+            // Clear form
             document.getElementById('url').value = '';
+            document.getElementById('useAdvanced').checked = false;
           } else {
-            messageDiv.className = 'error';
-            messageDiv.textContent = data.error || 'Failed to extract recipe';
+            showMessage(data.error || 'Failed to extract recipe', 'error');
             if (data.details) {
-              messageDiv.textContent += '\n' + data.details;
+              console.error('Extraction details:', data.details);
             }
           }
         } catch (error) {
-          messageDiv.className = 'error';
-          messageDiv.textContent = 'Connection error. Please try again.';
+          console.error('Extraction error:', error);
+          showMessage('Connection error. Please try again.', 'error');
         } finally {
-          loadingDiv.style.display = 'none';
-          extractForm.querySelector('button').disabled = false;
+          hideElement(loadingDiv);
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
         }
       });
-
-      // Modal close handler
-      closeModal.onclick = function () {
-        modal.style.display = 'none';
-      };
-
-      window.onclick = function (event) {
-        if (event.target == modal) {
-          modal.style.display = 'none';
-        }
-      };
 
       // Load API token
       async function loadApiToken() {
@@ -523,6 +1004,7 @@ Content-Type: application/json</pre
 
           if (data.token) {
             document.getElementById('apiToken').value = data.token;
+            document.getElementById('apiToken').placeholder = '';
           }
         } catch (error) {
           console.error('Error loading API token:', error);
@@ -530,32 +1012,55 @@ Content-Type: application/json</pre
       }
 
       // Copy API token to clipboard
-      function copyApiToken() {
+      async function copyApiToken() {
         const apiTokenInput = document.getElementById('apiToken');
-        apiTokenInput.select();
-        apiTokenInput.setSelectionRange(0, 99999); // For mobile devices
 
         try {
-          document.execCommand('copy');
+          await navigator.clipboard.writeText(apiTokenInput.value);
 
           // Show feedback
-          const button = event.target;
-          const originalText = button.textContent;
-          button.textContent = 'Copied!';
-          button.style.backgroundColor = '#4caf50';
+          const button = event.target.closest('button');
+          const originalText = button.innerHTML;
+          button.innerHTML = '<span>✅</span> Copied!';
+          button.style.background = 'var(--success-color)';
 
           setTimeout(() => {
-            button.textContent = originalText;
-            button.style.backgroundColor = '';
+            button.innerHTML = originalText;
+            button.style.background = '';
           }, 2000);
         } catch (err) {
-          alert('Failed to copy token');
+          // Fallback for older browsers
+          apiTokenInput.select();
+          apiTokenInput.setSelectionRange(0, 99999);
+
+          try {
+            document.execCommand('copy');
+            showMessage('API token copied to clipboard! 📋');
+          } catch (fallbackErr) {
+            showMessage('Failed to copy token. Please copy manually.', 'error');
+          }
         }
       }
 
-      // Load recipes and API token on page load
-      loadRecipes();
-      loadApiToken();
+      // Close modal on outside click
+      modal.addEventListener('click', e => {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+
+      // Close modal on escape key
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modal.classList.contains('show')) {
+          closeModal();
+        }
+      });
+
+      // Initialize app
+      document.addEventListener('DOMContentLoaded', () => {
+        loadRecipes();
+        loadApiToken();
+      });
     </script>
   </body>
 </html>
