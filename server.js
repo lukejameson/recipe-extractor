@@ -12,6 +12,8 @@ const PASSWORD = process.env.APP_PASSWORD || 'recipe123';
 const SAVE_PATH = process.env.SAVE_PATH || './recipes';
 const SESSION_SECRET =
   process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex');
+const API_TOKEN =
+  process.env.API_TOKEN || crypto.randomBytes(32).toString('hex');
 
 // Ensure save directory exists
 async function ensureSaveDirectory() {
@@ -249,6 +251,129 @@ app.get('/recipe/:filename', requireAuth, async (req, res) => {
   }
 });
 
+// API endpoint for iOS Shortcuts and external integrations
+app.post('/api/extract', async (req, res) => {
+  // Check for API token in Authorization header
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token || token !== API_TOKEN) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+
+  const { url, useAdvanced = true, returnContent = false } = req.body;
+
+  if (!url) {
+    return res.status(400).json({ success: false, error: 'URL is required' });
+  }
+
+  // Validate URL
+  try {
+    new URL(url);
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ success: false, error: 'Invalid URL provided' });
+  }
+
+  const script = useAdvanced
+    ? 'extract-recipe-advanced.js'
+    : 'extract-recipe.js';
+
+  // Create a temporary directory for the extraction
+  const tempDir = path.join(__dirname, 'temp', Date.now().toString());
+
+  try {
+    await fs.mkdir(tempDir, { recursive: true });
+
+    // Execute the extraction script
+    exec(
+      `cd "${tempDir}" && node "${path.join(__dirname, script)}" "${url}"`,
+      async (error, stdout, stderr) => {
+        if (error) {
+          console.error('API Extraction error:', error);
+          console.error('stderr:', stderr);
+
+          // Clean up temp directory
+          try {
+            await fs.rmdir(tempDir, { recursive: true });
+          } catch (e) {}
+
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to extract recipe',
+            details: stderr || error.message,
+          });
+        }
+
+        try {
+          // Find the created markdown file
+          const files = await fs.readdir(tempDir);
+          const mdFile = files.find(file => file.endsWith('.md'));
+
+          if (!mdFile) {
+            throw new Error('No recipe file was created');
+          }
+
+          // Read the content
+          const content = await fs.readFile(path.join(tempDir, mdFile), 'utf8');
+
+          // Copy to save directory
+          const finalPath = path.join(SAVE_PATH, mdFile);
+          await fs.copyFile(path.join(tempDir, mdFile), finalPath);
+
+          // Extract recipe data from content
+          const titleMatch = content.match(/title:\s*'([^']+)'/);
+          const title = titleMatch ? titleMatch[1] : 'Untitled Recipe';
+
+          // Clean up temp directory
+          await fs.rmdir(tempDir, { recursive: true });
+
+          // Prepare response
+          const response = {
+            success: true,
+            filename: mdFile,
+            title: title,
+            savedTo: finalPath,
+          };
+
+          // Include content if requested (useful for iOS Shortcuts)
+          if (returnContent) {
+            response.content = content;
+          }
+
+          res.json(response);
+        } catch (err) {
+          console.error('API Post-processing error:', err);
+
+          // Clean up temp directory
+          try {
+            await fs.rmdir(tempDir, { recursive: true });
+          } catch (e) {}
+
+          res.status(500).json({
+            success: false,
+            error: 'Failed to process extracted recipe',
+            details: err.message,
+          });
+        }
+      }
+    );
+  } catch (err) {
+    console.error('API Setup error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set up extraction',
+      details: err.message,
+    });
+  }
+});
+
+// API endpoint to get the current API token (only for authenticated users)
+app.get('/api/token', requireAuth, (req, res) => {
+  res.json({ token: API_TOKEN });
+});
+
 // Catch all other routes and redirect to login if not authenticated
 app.get('*', (req, res) => {
   if (req.session && req.session.authenticated) {
@@ -267,4 +392,7 @@ app.listen(PORT, () => {
       PASSWORD ? 'Enabled' : 'Disabled (set APP_PASSWORD)'
     }`
   );
+  console.log(`API Token: ${API_TOKEN}`);
+  console.log(`\nAPI Endpoint: POST /api/extract`);
+  console.log(`Authorization: Bearer ${API_TOKEN}`);
 });

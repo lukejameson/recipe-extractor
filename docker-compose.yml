@@ -11,6 +11,8 @@ services:
       - APP_PASSWORD=${APP_PASSWORD:-recipe123}
       - SAVE_PATH=/recipes
       - SESSION_SECRET=${SESSION_SECRET:-defaultsecret}
+      - API_TOKEN=${API_TOKEN:-}
     volumes:
-      - ./recipes:/recipes
+      - /recipes:/recipes
+    user: "1000:1000"  # Replace with your UID:GID if different
     restart: unless-stopped
