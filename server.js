@@ -57,6 +57,11 @@ app.use(
 // API routes must be registered BEFORE static to avoid static handler intercepting them
 // (Moved API route for deleting markdown below; keeping static config unchanged)
 
+/**
+ * PWA assets:
+ * - Serve static files (unchanged behavior)
+ * - Add simple in-memory manifest and service worker for app-shell caching
+ */
 // Serve static files but exclude index.html
 app.use(
   express.static('public', {
@@ -71,6 +76,116 @@ app.use(
     },
   })
 );
+
+// Minimal manifest served from memory (simplest working PWA)
+app.get('/manifest.webmanifest', (req, res) => {
+  res.type('application/manifest+json').send(
+    JSON.stringify(
+      {
+        name: 'JustTheRecipe',
+        short_name: 'Recipes',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        theme_color: '#0b0b0f',
+        background_color: '#0b0b0f',
+        icons: [
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: '/icon-maskable-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: '/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          }
+        ],
+      },
+      null,
+      2
+    )
+  );
+});
+
+// Minimal service worker (app shell + static assets). Cached in-memory string.
+const swSource = `
+// Simple app-shell cache
+const CACHE_NAME = 'jtr-cache-v1';
+const APP_SHELL = [
+  '/',
+  '/viewer.html',
+  '/login.html',
+  '/styles.css'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+// Network-first for HTML pages, cache-first for other assets
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const isHTML = request.headers.get('accept')?.includes('text/html');
+
+  if (isHTML) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request).then((r) => r || caches.match('/viewer.html')))
+    );
+  } else {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        return (
+          cached ||
+          fetch(request)
+            .then((response) => {
+              const copy = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+              return response;
+            })
+            .catch(() => cached)
+        );
+      })
+    );
+  }
+});
+`.trim();
+
+app.get('/sw.js', (req, res) => {
+  res.type('application/javascript').send(swSource);
+});
 
 // Authentication middleware
 function requireAuth(req, res, next) {

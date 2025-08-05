@@ -9,7 +9,17 @@
       type="image/svg+xml"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%23ffffff'%3E🍳%3C/text%3E%3C/svg%3E"
     />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0b0b0f" />
     <link rel="stylesheet" href="/styles.css" />
+    <script>
+      // Register service worker (simple, robust)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </head>
   <body class="viewer">
     <header class="header">
@@ -102,15 +112,15 @@
     </div>
 
     <div class="recipe-modal" id="recipeModal">
-      <!-- Mobile-friendly close bar -->
+      <!-- Mobile-friendly close pill pinned to TOP inside modal -->
       <button
         class="btn btn-secondary"
         id="mobileCloseBar"
         onclick="closeRecipeModal()"
-        style="position: fixed; left: 50%; transform: translateX(-50%); bottom: 68px; z-index: 2000; border-radius: 9999px; padding: 0.5rem 1rem; display: none; box-shadow: 0 10px 24px rgba(0,0,0,0.35);"
+        style="position: fixed; right: 12px; top: 12px; z-index: 2000; border-radius: 9999px; padding: 0.45rem 0.8rem; display: none; box-shadow: 0 10px 24px rgba(0,0,0,0.35);"
         aria-label="Close"
       >
-        ✖ Close
+        ✖
       </button>
       <div class="recipe-detail" style="position:relative; z-index: 1001;">
         <button class="close-modal" onclick="closeRecipeModal()">
