@@ -2,9 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Recipe Extractor - Login</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="OnlyRecipe" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#0b0b0f" />
   </head>
   <body class="login">
     <div class="login-container">
@@ -27,6 +33,13 @@
     </div>
 
     <script>
+      // Detect iOS standalone/PWA mode
+      var isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+                       || window.navigator.standalone === true;
+      if (isStandalone) {
+        document.documentElement.classList.add('pwa-standalone');
+      }
+
       document
         .getElementById('loginForm')
         .addEventListener('submit', async e => {
