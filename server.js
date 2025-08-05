@@ -5,7 +5,13 @@ const { exec } = require('child_process');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const marked = require('marked');
+let marked;
+async function getMarked() {
+  if (!marked) {
+    marked = (await import('marked')).marked || (await import('marked'));
+  }
+  return marked;
+}
 const RecipeDatabase = require('./database');
 
 const app = express();
@@ -778,8 +784,10 @@ app.get('/api/search', requireAuth, (req, res) => {
   }
 });
 
-app.get('/api/recipe/:id/export', requireAuth, (req, res) => {
+app.get('/api/recipe/:id/export', requireAuth, async (req, res) => {
   try {
+    // lazily load marked if needed later; db.exportToMarkdown already returns markdown string
+    await getMarked().catch(() => {});
     const markdown = db.exportToMarkdown(parseInt(req.params.id));
     if (!markdown) {
       return res
