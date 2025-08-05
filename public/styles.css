@@ -133,6 +133,8 @@ body.viewer .header {
   background: rgba(11,11,15,0.65);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  /* Add safe area padding for notch */
+  padding-top: env(safe-area-inset-top);
 }
 body.viewer .header-content {
   max-width: 1200px;
@@ -192,7 +194,7 @@ body.viewer .nav-links {
 body.viewer .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0.75rem 1rem 5.5rem; /* bottom space for mobile nav */
+  padding: 0.75rem 1rem calc(5.5rem + env(safe-area-inset-bottom)); /* bottom space for mobile nav */
   display: block; /* ensure default flow; grid is applied at >=768px */
 }
 
@@ -1270,13 +1272,14 @@ body.viewer .mobile-nav {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-bottom));
   background: rgba(11,11,15,0.9);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   z-index: 999; /* above content and below modals */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 body.viewer .mobile-nav .nav-item {
   display: flex;
@@ -1300,7 +1303,7 @@ body.viewer .mobile-nav .nav-item.active {
 body.viewer .fab {
   position: fixed;
   right: 14px;
-  bottom: 74px; /* above bottom bar */
+  bottom: calc(74px + env(safe-area-inset-bottom)); /* above bottom bar */
   width: 52px;
   height: 52px;
   border-radius: 50%;
