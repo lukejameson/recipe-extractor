@@ -221,64 +221,182 @@ class RecipeDatabase {
     return { quantity, unit, converted: false };
   }
 
-  // Format converted measurement for display
+  // Format converted measurement for display (metric-first with imperial reference)
   formatMeasurement(convertedData) {
-    if (!convertedData.converted) {
-      return convertedData.quantity + ' ' + convertedData.unit;
+    if (!convertedData.quantity) return '';
+
+    const metric =
+      this.formatQuantityForDisplay(convertedData.quantity) +
+      (convertedData.unit ? ' ' + convertedData.unit : '');
+
+    if (
+      convertedData.converted &&
+      convertedData.originalQuantity &&
+      convertedData.originalUnit
+    ) {
+      const imperial =
+        this.formatQuantityForDisplay(convertedData.originalQuantity) +
+        ' ' +
+        convertedData.originalUnit;
+      return `${metric} (${imperial})`;
     }
 
-    const metric = convertedData.quantity + ' ' + convertedData.unit;
-    const imperial =
-      convertedData.originalQuantity + ' ' + convertedData.originalUnit;
-    return `${metric} (${imperial})`;
+    return metric;
   }
 
-  // Parse ingredient line into structured data
+  // Parse ingredient line into structured data (metric-first with "imperial / metric" support)
   parseIngredient(ingredientLine) {
-    const regex = /^([\d\/\.\s-]+)?\s*([a-zA-Z\s]+)?\s*(.+)$/;
-    const match = ingredientLine.match(regex);
+    const raw = (ingredientLine || '').trim();
+
+    // 1) Split trailing notes in parentheses to preserve them (e.g., "(you may need ...)")
+    // We'll try to keep the final parenthetical block as "notes" if it doesn't look like the main quantity/unit
+    let notes = '';
+    let mainText = raw;
+    const notesMatch = raw.match(/\(([^)]*)\)\s*$/);
+    if (notesMatch) {
+      // Keep notes out of scaling text; re-attach to display later
+      notes = notesMatch[0]; // includes parentheses
+      mainText = raw.slice(0, notesMatch.index).trim();
+    }
+
+    // 2) Detect "imperial / metric" pattern at the beginning.
+    // Examples:
+    //   "3 ½ teaspoons / 19 g granulated sugar"
+    //   "1 ¼ cups / 300 ml warm water"
+    //   "2 1/4 ½ cups / 440 g bread flour ..."
+    // Also handle cases with metric-first: "19 g / 3 ½ teaspoons sugar"
+    const splitMatch = mainText.match(
+      /^\s*([^/]+?)\s*\/\s*([^\s]+(?:\s+[a-zA-Z]+)?)\s+(.*)$/
+    );
+    if (splitMatch) {
+      const imperialPart = splitMatch[1].trim();
+      const metricHead = splitMatch[2].trim();
+      const restName = splitMatch[3].trim();
+
+      // Try parse metric head first (quantity + unit)
+      const metricMatch = metricHead.match(
+        /^([\d\u00BC-\u00BE\u2150-\u215E\/\.\s-]+)\s*([a-zA-Z]+)$/
+      );
+
+      // If metric head parsed, use it as primary; keep imperial as original
+      if (metricMatch) {
+        const metricQty = this.parseQuantity(metricMatch[1]?.trim());
+        const metricUnit = metricMatch[2]?.trim();
+
+        // Parse imperial quantity/unit for reference (do not scale it; it's reference only)
+        const imp = this._parseQtyUnitLoose(imperialPart);
+
+        const metricDisplay = metricQty
+          ? `${this.formatQuantityForDisplay(metricQty)} ${
+              metricUnit || ''
+            }`.trim()
+          : '';
+
+        const imperialDisplay =
+          imp.quantity && imp.unit
+            ? `${this.formatQuantityForDisplay(imp.quantity)} ${imp.unit}`
+            : imperialPart; // fallback to raw
+
+        const displayBase =
+          metricDisplay && imperialDisplay
+            ? `${metricDisplay} ${restName} (${imperialDisplay})`
+            : mainText;
+
+        const display_text = notes
+          ? `${displayBase} ${notes}`.trim()
+          : displayBase;
+
+        return {
+          quantity: metricQty || null,
+          unit: metricUnit || '',
+          ingredient_name: restName,
+          original_text: raw,
+          original_quantity: imp.quantity || null,
+          original_unit: imp.unit || '',
+          converted: true, // we normalized to metric-first
+          display_text,
+        };
+      }
+      // If metric didn't parse cleanly, fall through to generic parsing below
+    }
+
+    // 3) Generic parsing fallback: "qty unit name"
+    // Allow unicode fractions and mixed units; try to capture quantity + unit + name
+    const regex =
+      /^([\d\u00BC-\u00BE\u2150-\u215E\/\.\s-]+)?\s*([a-zA-Z\u00B0]+)?\s*(.+)$/;
+    const match = mainText.match(regex);
 
     if (match) {
       const [_, quantity, unit, rest] = match;
       const parsedQuantity = this.parseQuantity(quantity);
       const cleanUnit = unit ? unit.trim() : '';
-      const ingredientName = rest || ingredientLine;
+      const ingredientName = rest || mainText;
 
-      // Convert to metric if applicable
+      // Convert to metric if applicable (if already metric units like g/ml, convertToMetric returns converted:false and leaves as-is)
       const converted = this.convertToMetric(
         parsedQuantity,
         cleanUnit,
         ingredientName
       );
 
+      const metricDisplay = converted.quantity
+        ? `${this.formatQuantityForDisplay(converted.quantity)}${
+            converted.unit ? ' ' + converted.unit : ''
+          }`
+        : '';
+
+      const imperialDisplay =
+        converted.originalQuantity && converted.originalUnit
+          ? `${this.formatQuantityForDisplay(converted.originalQuantity)} ${
+              converted.originalUnit
+            }`
+          : '';
+
+      const base =
+        metricDisplay && imperialDisplay
+          ? `${metricDisplay} ${ingredientName} (${imperialDisplay})`
+          : converted.quantity
+          ? `${metricDisplay} ${ingredientName}`.trim()
+          : raw;
+
+      const display_text = notes ? `${base} ${notes}`.trim() : base;
+
       return {
         quantity: converted.quantity,
         unit: converted.unit,
         ingredient_name: ingredientName,
-        original_text: ingredientLine,
+        original_text: raw,
         original_quantity: converted.originalQuantity || parsedQuantity,
         original_unit: converted.originalUnit || cleanUnit,
         converted: converted.converted,
-        display_text: converted.converted
-          ? `${this.formatQuantityForDisplay(converted.quantity)} ${
-              converted.unit
-            } ${ingredientName} (${this.formatQuantityForDisplay(
-              converted.originalQuantity
-            )} ${converted.originalUnit})`
-          : ingredientLine,
+        display_text,
       };
     }
 
+    // 4) Fallback: no parse, just keep original
     return {
       quantity: null,
       unit: '',
-      ingredient_name: ingredientLine,
-      original_text: ingredientLine,
+      ingredient_name: mainText || raw,
+      original_text: raw,
       original_quantity: null,
       original_unit: '',
       converted: false,
-      display_text: ingredientLine,
+      display_text: raw,
     };
+  }
+
+  // Helper: loose parse "qty unit" from a fragment like "2 1/4 ½ cups"
+  _parseQtyUnitLoose(fragment) {
+    const f = (fragment || '').trim();
+    const m = f.match(
+      /^([\d\u00BC-\u00BE\u2150-\u215E\/\.\s-]+)\s*([a-zA-Z]+)\b/
+    );
+    if (!m) return { quantity: null, unit: '', rest: f };
+    const qty = this.parseQuantity(m[1]?.trim());
+    const unit = m[2]?.trim();
+    const rest = f.slice(m[0].length).trim();
+    return { quantity: qty || null, unit: unit || '', rest };
   }
 
   // Format quantity for better display
@@ -447,7 +565,7 @@ class RecipeDatabase {
     return match ? parseFloat(match[1]) : null;
   }
 
-  // Scale ingredients for a recipe
+  // Scale ingredients for a recipe (metric-first; show imperial in parentheses if available; keep notes)
   scaleIngredients(recipeId, scaleFactor) {
     const ingredients = this.db
       .prepare(
@@ -458,21 +576,46 @@ class RecipeDatabase {
       .all(recipeId);
 
     return ingredients.map(ing => {
+      // Try to preserve any trailing notes that were part of display_text
+      const noteMatch =
+        ing.display_text && ing.display_text.match(/\([^)]*\)\s*$/);
+      const trailingNote =
+        noteMatch && ing.display_text && ing.display_text.endsWith(noteMatch[0])
+          ? noteMatch[0]
+          : '';
+
       if (ing.quantity) {
         const scaledQuantity = ing.quantity * scaleFactor;
-        // Format the quantity nicely
-        let displayQuantity;
 
+        // Format the quantity nicely (prefer fractions for small numbers)
+        let displayQuantity;
         if (scaledQuantity % 1 === 0) {
           displayQuantity = scaledQuantity.toString();
         } else {
-          // Convert to fraction if possible
           const fraction = this.decimalToFraction(scaledQuantity);
-          displayQuantity = fraction || scaledQuantity.toFixed(2);
+          displayQuantity =
+            fraction || Number(scaledQuantity.toFixed(2)).toString();
         }
 
-        const scaledText =
-          `${displayQuantity} ${ing.unit} ${ing.ingredient_name}`.trim();
+        // Build metric-first scaled text; include original imperial if present
+        const metricPart = `${displayQuantity}${
+          ing.unit ? ' ' + ing.unit : ''
+        } ${ing.ingredient_name}`.trim();
+
+        // Append original imperial reference if present (not scaled)
+        let ref = '';
+        if (ing.original_quantity && ing.original_unit) {
+          const origQty =
+            ing.original_quantity % 1 === 0
+              ? ing.original_quantity.toString()
+              : this.decimalToFraction(ing.original_quantity) ||
+                Number(ing.original_quantity.toFixed(2)).toString();
+          ref = ` (${origQty} ${ing.original_unit})`;
+        }
+
+        const scaledText = `${metricPart}${ref}${
+          trailingNote ? ' ' + trailingNote : ''
+        }`.trim();
 
         return {
           ...ing,
@@ -482,7 +625,11 @@ class RecipeDatabase {
         };
       }
 
-      return ing;
+      // For lines without parsed quantity, return display_text or original_text
+      return {
+        ...ing,
+        scaled_text: ing.display_text || ing.original_text,
+      };
     });
   }
 
