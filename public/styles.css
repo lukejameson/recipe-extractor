@@ -418,10 +418,20 @@ body.viewer .recipe-detail {
 body.viewer .recipe-detail-header {
   position: sticky;
   top: 0;
-  padding: 0.6rem 0.9rem; /* tighter */
+  padding: calc(0.6rem + env(safe-area-inset-top)) 0.9rem 0.6rem; /* include notch inset on iOS */
   border-bottom: 1px solid var(--border);
   background: rgba(24, 24, 28, 0.98);
   z-index: 2;
+}
+
+/* When running as PWA, guarantee extra headroom under clock/Dynamic Island */
+@media (display-mode: standalone) {
+  body.viewer .recipe-detail-header {
+    padding-top: max(env(safe-area-inset-top), 24px);
+  }
+}
+html.pwa-standalone body.viewer .recipe-detail-header {
+  padding-top: max(env(safe-area-inset-top), 24px);
 }
 /* Title smaller on mobile */
 body.viewer .recipe-detail-title {
