@@ -1,623 +1,595 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Recipe Viewer</title>
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%23ffffff'%3E🍳%3C/text%3E%3C/svg%3E"
-    />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#0b0b0f" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="OnlyRecipe" />
-    <meta name="format-detection" content="telephone=no" />
-    <link rel="stylesheet" href="/styles.css" />
-    <script>
-      // Register service worker (simple, robust)
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    </script>
-  </head>
-  <body class="viewer">
-    <script>
-      // Detect iOS standalone/PWA mode early in page load
-      var isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
-                       || window.navigator.standalone === true;
-      if (isStandalone) {
-        document.documentElement.classList.add('pwa-standalone');
-      }
-    </script>
-    <header class="header">
-      <div class="header-content">
-        <a href="/" class="logo">
-          <span class="logo-icon">🍳</span>
-          <span>JustTheRecipe</span>
-        </a>
-        <div class="search-container">
-          <input
-            type="text"
-            class="search-input"
-            id="searchInput"
-            placeholder="Search recipes..."
-          />
-        </div>
 
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Recipe Viewer</title>
+  <link
+        rel="icon"
+        type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%23ffffff'%3E🍳%3C/text%3E%3C/svg%3E" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OnlyRecipe" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script>
+    // Register service worker (simple, robust)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => { });
+      });
+    }
+  </script>
+</head>
+
+<body class="viewer">
+  <script>
+    // Detect iOS standalone/PWA mode early in page load
+    var isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    if (isStandalone) {
+      document.documentElement.classList.add('pwa-standalone');
+    }
+  </script>
+  <header class="header">
+    <div class="header-content">
+      <a href="/" class="logo">
+        <span class="logo-icon">🍳</span>
+        <span>JustTheRecipe</span>
+      </a>
+      <div class="search-container">
+        <input
+               type="text"
+               class="search-input"
+               id="searchInput"
+               placeholder="Search recipes..." />
       </div>
-    </header>
 
-    <!-- Mobile bottom navigation -->
-    <nav class="mobile-nav">
-      <a class="nav-item" href="/" onclick="event.preventDefault(); currentCategory='all'; renderRecipes();">
-        <span>🏠</span>
-        Home
-      </a>
-      <a class="nav-item" href="#" onclick="event.preventDefault(); document.getElementById('searchInput').focus();">
-        <span>🔎</span>
-        Search
-      </a>
-      <a class="nav-item" href="#" onclick="event.preventDefault(); showCreateRecipeModal();">
-        <span>➕</span>
-        New
-      </a>
-      <a class="nav-item" href="#" onclick="event.preventDefault(); toggleCategorySheet();">
-        <span>🗂️</span>
-        Categories
-      </a>
-    </nav>
-
-    <!-- Floating Action Button for quick create -->
-    <button class="fab" onclick="showCreateRecipeModal()" aria-label="Create Recipe">+</button>
-
-    <!-- Category Sheet (mobile) -->
-    <div class="category-sheet" id="categorySheet" aria-hidden="true">
-      <div class="sidebar-section" style="margin-bottom: 0">
-        <h3 class="sidebar-title" style="margin-top: 0">Categories</h3>
-        <div class="category-list" id="categoryListMobile"></div>
-      </div>
     </div>
+  </header>
 
-    <div class="container">
-      <aside class="sidebar">
-        <div class="sidebar-section">
-          <h3 class="sidebar-title">
-            <span>📂</span>
-            Categories
-          </h3>
-          <div class="category-list" id="categoryList">
-            <div class="category-item active" data-category="all">
-              <div
-                class="category-color"
-                style="background: var(--gray-400)"
-              ></div>
-              <span class="category-name">All Recipes</span>
-              <span class="category-count" id="allCount">0</span>
-            </div>
-          </div>
-          <button
-            class="btn btn-primary"
-            style="width: 100%; margin-top: 1rem"
-            onclick="showCategoryModal()"
-          >
-            <span>➕</span>
-            Add Category
-          </button>
-        </div>
+  <!-- Mobile bottom navigation -->
+  <nav class="mobile-nav">
+    <a class="nav-item" href="/" onclick="event.preventDefault(); currentCategory='all'; renderRecipes();">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="#D3D3D3" width="32" height="32">
+        <path
+              d="M341.8 72.6C329.5 61.2 310.5 61.2 298.3 72.6L74.3 280.6C64.7 289.6 61.5 303.5 66.3 315.7C71.1 327.9 82.8 336 96 336L112 336L112 512C112 547.3 140.7 576 176 576L464 576C499.3 576 528 547.3 528 512L528 336L544 336C557.2 336 569 327.9 573.8 315.7C578.6 303.5 575.4 289.5 565.8 280.6L341.8 72.6zM304 384L336 384C362.5 384 384 405.5 384 432L384 528L256 528L256 432C256 405.5 277.5 384 304 384z" />
+      </svg>
+    </a>
+    <a class="nav-item" href="#" onclick="event.preventDefault(); showCreateRecipeModal();">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="#D3D3D3" width="32" height="32">
+        <path
+              d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
+      </svg>
+    </a>
+    <a class="nav-item" href="#" onclick="event.preventDefault(); toggleCategorySheet();">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="#D3D3D3" width="32" height="32">
+        <path
+              d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z" />
+      </svg>
+    </a>
+  </nav>
 
-        <!-- Removed desktop Create Recipe from sidebar per request -->
-      </aside>
+  <!-- Floating Action Button for quick create -->
+  <button class="fab" onclick="showCreateRecipeModal()" aria-label="Create Recipe">+</button>
 
-      <main class="main-content">
-        <div id="recipeGrid" class="recipe-grid">
-          <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>Loading recipes...</p>
-          </div>
-        </div>
-      </main>
+  <!-- Category Sheet (mobile) -->
+  <div class="category-sheet" id="categorySheet" aria-hidden="true">
+    <div class="sidebar-section" style="margin-bottom: 0">
+      <h3 class="sidebar-title" style="margin-top: 0">Categories</h3>
+      <div class="category-list" id="categoryListMobile"></div>
     </div>
+  </div>
 
-    <div class="recipe-modal" id="recipeModal">
-      <!-- Mobile-friendly close pill pinned to TOP inside modal -->
-      <button
-        class="btn btn-secondary"
-        id="mobileCloseBar"
-        onclick="closeRecipeModal()"
-        style="position: fixed; right: 12px; top: 12px; z-index: 2000; border-radius: 9999px; padding: 0.45rem 0.8rem; display: none; box-shadow: 0 10px 24px rgba(0,0,0,0.35);"
-        aria-label="Close"
-      >
-        ✖
-      </button>
-      <div class="recipe-detail" style="position:relative; z-index: 1001;">
-        <button class="close-modal" onclick="closeRecipeModal()">
-          &times;
-        </button>
-        <div id="recipeDetailContent"></div>
-        <script>
-          // Add mobile actions helpers if not present (id-based to avoid duplicates)
-          function toggleActionsMenu(event) {
-            event && event.preventDefault && event.preventDefault();
-            const menu = document.getElementById('actionsMenu');
-            if (menu) {
-              menu.classList.toggle('show');
-            }
-          }
-          function closeActionsMenu() {
-            const menu = document.getElementById('actionsMenu');
-            if (menu) menu.classList.remove('show');
-          }
-          // Close actions on outside click
-          document.addEventListener('click', (e) => {
-            const menu = document.getElementById('actionsMenu');
-            const toggleBtn = document.querySelector('.actions-toggle');
-            if (!menu) return;
-            const withinActions = menu.contains(e.target);
-            const onToggle = toggleBtn && toggleBtn.contains(e.target);
-            if (menu.classList.contains('show') && !withinActions && !onToggle) {
-              menu.classList.remove('show');
-            }
-          });
-        </script>
-      </div>
-    </div>
-
-    <!-- Create Recipe Modal -->
-    <div class="recipe-modal" id="createRecipeModal">
-      <div class="recipe-detail">
-        <button class="close-modal" onclick="closeCreateRecipeModal()">
-          &times;
-        </button>
-        <div class="recipe-detail-header">
-          <h1 class="recipe-detail-title">Create New Recipe</h1>
-        </div>
-        <div class="recipe-content">
-          <form id="createRecipeForm">
-            <!-- Create Mode Toggle -->
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">
+          <span>📂</span>
+          Categories
+        </h3>
+        <div class="category-list" id="categoryList">
+          <div class="category-item active" data-category="all">
             <div
-              class="form-section"
-              id="createModeSection"
-              style="display: none; margin-top: -0.5rem; margin-bottom: 1.5rem"
-            >
-              <div class="form-row">
-                <div class="form-group" style="margin: 0">
-                  <label class="form-label">Create Mode</label>
-                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
-                    <button
-                      type="button"
-                      id="modeManualBtn"
-                      class="btn btn-secondary"
-                    >
-                      ✍️ Manual
-                    </button>
-                    <button
-                      type="button"
-                      id="modeImportBtn"
-                      class="btn btn-primary"
-                    >
-                      🔗 Import from URL
-                    </button>
-                  </div>
+                 class="category-color"
+                 style="background: var(--gray-400)"></div>
+            <span class="category-name">All Recipes</span>
+            <span class="category-count" id="allCount">0</span>
+          </div>
+        </div>
+        <button
+                class="btn btn-primary"
+                style="width: 100%; margin-top: 1rem"
+                onclick="showCategoryModal()">
+          <span>➕</span>
+          Add Category
+        </button>
+      </div>
+
+      <!-- Removed desktop Create Recipe from sidebar per request -->
+    </aside>
+
+    <main class="main-content">
+      <div id="recipeGrid" class="recipe-grid">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading recipes...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="recipe-modal" id="recipeModal">
+    <!-- Mobile-friendly close pill pinned to TOP inside modal -->
+    <button
+            class="btn btn-secondary"
+            id="mobileCloseBar"
+            onclick="closeRecipeModal()"
+            style="position: fixed; right: 12px; top: 12px; z-index: 2000; border-radius: 9999px; padding: 0.45rem 0.8rem; display: none; box-shadow: 0 10px 24px rgba(0,0,0,0.35);"
+            aria-label="Close">
+      ✖
+    </button>
+    <div class="recipe-detail" style="position:relative; z-index: 1001;">
+      <button class="close-modal" onclick="closeRecipeModal()">
+        &times;
+      </button>
+      <div id="recipeDetailContent"></div>
+      <script>
+        // Add mobile actions helpers if not present (id-based to avoid duplicates)
+        function toggleActionsMenu(event) {
+          event && event.preventDefault && event.preventDefault();
+          const menu = document.getElementById('actionsMenu');
+          if (menu) {
+            menu.classList.toggle('show');
+          }
+        }
+        function closeActionsMenu() {
+          const menu = document.getElementById('actionsMenu');
+          if (menu) menu.classList.remove('show');
+        }
+        // Close actions on outside click
+        document.addEventListener('click', (e) => {
+          const menu = document.getElementById('actionsMenu');
+          const toggleBtn = document.querySelector('.actions-toggle');
+          if (!menu) return;
+          const withinActions = menu.contains(e.target);
+          const onToggle = toggleBtn && toggleBtn.contains(e.target);
+          if (menu.classList.contains('show') && !withinActions && !onToggle) {
+            menu.classList.remove('show');
+          }
+        });
+      </script>
+    </div>
+  </div>
+
+  <!-- Create Recipe Modal -->
+  <div class="recipe-modal" id="createRecipeModal">
+    <div class="recipe-detail">
+      <button class="close-modal" onclick="closeCreateRecipeModal()">
+        &times;
+      </button>
+      <div class="recipe-detail-header">
+        <h1 class="recipe-detail-title">Create New Recipe</h1>
+      </div>
+      <div class="recipe-content">
+        <form id="createRecipeForm">
+          <!-- Create Mode Toggle -->
+          <div
+               class="form-section"
+               id="createModeSection"
+               style="display: none; margin-top: -0.5rem; margin-bottom: 1.5rem">
+            <div class="form-row">
+              <div class="form-group" style="margin: 0">
+                <label class="form-label">Create Mode</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+                  <button
+                          type="button"
+                          id="modeManualBtn"
+                          class="btn btn-secondary">
+                    ✍️ Manual
+                  </button>
+                  <button
+                          type="button"
+                          id="modeImportBtn"
+                          class="btn btn-primary">
+                    🔗 Import from URL
+                  </button>
                 </div>
               </div>
+            </div>
+            <div
+                 id="importUrlRow"
+                 class="form-row"
+                 style="margin-top: 1rem; display: none">
+              <div class="form-group" style="grid-column: 1 / -1">
+                <label class="form-label">Recipe URL</label>
+                <input
+                       type="url"
+                       id="importUrlInput"
+                       class="form-input"
+                       placeholder="https://example.com/recipe" />
+              </div>
               <div
-                id="importUrlRow"
-                class="form-row"
-                style="margin-top: 1rem; display: none"
-              >
-                <div class="form-group" style="grid-column: 1 / -1">
-                  <label class="form-label">Recipe URL</label>
-                  <input
-                    type="url"
-                    id="importUrlInput"
-                    class="form-input"
-                    placeholder="https://example.com/recipe"
-                  />
-                </div>
-                <div
-                  class="form-group"
-                  style="
+                   class="form-group"
+                   style="
                     grid-column: 1 / -1;
                     display: flex;
                     gap: 0.75rem;
                     align-items: center;
-                  "
-                >
-                  <label
-                    style="
+                  ">
+                <label
+                       style="
                       display: flex;
                       align-items: center;
                       gap: 0.5rem;
                       color: var(--text-2);
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      id="useAdvancedImport"
-                      class="ingredient-checkbox"
-                    />
-                    Use advanced extractor
-                  </label>
-                  <button
-                    type="button"
-                    id="runImportBtn"
-                    class="btn btn-success"
-                  >
-                    ✨ Import
-                  </button>
-                  <div id="importLoading" class="loading" style="margin: 0">
-                    <div
-                      class="loading-spinner"
-                      style="
+                    ">
+                  <input
+                         type="checkbox"
+                         id="useAdvancedImport"
+                         class="ingredient-checkbox" />
+                  Use advanced extractor
+                </label>
+                <button
+                        type="button"
+                        id="runImportBtn"
+                        class="btn btn-success">
+                  ✨ Import
+                </button>
+                <div id="importLoading" class="loading" style="margin: 0">
+                  <div
+                       class="loading-spinner"
+                       style="
                         border-color: var(--border);
                         border-top-color: var(--primary-color);
                         width: 1rem;
                         height: 1rem;
-                      "
-                    ></div>
-                    <span>Importing...</span>
-                  </div>
+                      "></div>
+                  <span>Importing...</span>
                 </div>
-                <div
-                  id="importMessage"
-                  class="message"
-                  style="display: none"
-                ></div>
               </div>
+              <div
+                   id="importMessage"
+                   class="message"
+                   style="display: none"></div>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Recipe Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  class="form-input"
-                  required
-                  placeholder="Enter recipe title"
-                />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Cuisine</label>
-                <input
-                  type="text"
-                  name="cuisine"
-                  class="form-input"
-                  placeholder="e.g., Italian, Mexican, Asian"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Course</label>
-                <input
-                  type="text"
-                  name="course"
-                  class="form-input"
-                  placeholder="e.g., Main Course, Dessert, Appetizer"
-                />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Servings</label>
-                <input
-                  type="text"
-                  name="servings"
-                  class="form-input"
-                  placeholder="e.g., 4 servings"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Prep Time</label>
-                <input
-                  type="text"
-                  name="prep_time"
-                  class="form-input"
-                  placeholder="e.g., 30 minutes"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Cook Time</label>
-                <input
-                  type="text"
-                  name="cook_time"
-                  class="form-input"
-                  placeholder="e.g., 1 hour"
-                />
-              </div>
-            </div>
-
+          </div>
+          <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Tags</label>
+              <label class="form-label">Recipe Title *</label>
               <input
-                type="text"
-                name="tags"
-                class="form-input"
-                placeholder="Separate tags with commas"
-              />
+                     type="text"
+                     name="title"
+                     class="form-input"
+                     required
+                     placeholder="Enter recipe title" />
             </div>
+          </div>
 
+          <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Category</label>
-              <select name="category_id" class="form-input" id="categorySelect">
-                <option value="">No Category</option>
-              </select>
-            </div>
-
-            <div class="form-section">
-              <h3 class="form-section-title">🥘 Ingredients</h3>
-              <div id="ingredientsContainer">
-                <div class="ingredient-input-row">
-                  <input
-                    type="text"
-                    class="form-input ingredient-input"
-                    placeholder="e.g., 1 cup flour"
-                    data-index="0"
-                  />
-                  <button
-                    type="button"
-                    class="btn-icon remove-ingredient"
-                    onclick="removeIngredient(0)"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="addIngredient()"
-              >
-                <span>➕</span>
-                Add Ingredient
-              </button>
-            </div>
-
-            <div class="form-section">
-              <h3 class="form-section-title">📝 Instructions</h3>
-              <div id="instructionsContainer">
-                <div class="instruction-input-row">
-                  <div class="instruction-number">1</div>
-                  <textarea
-                    class="form-textarea instruction-input"
-                    placeholder="Enter instruction step"
-                    data-index="0"
-                  ></textarea>
-                  <button
-                    type="button"
-                    class="btn-icon remove-instruction"
-                    onclick="removeInstruction(0)"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="addInstruction()"
-              >
-                <span>➕</span>
-                Add Instruction
-              </button>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Source URL (Optional)</label>
+              <label class="form-label">Cuisine</label>
               <input
-                type="url"
-                name="source_url"
-                class="form-input"
-                placeholder="https://example.com/recipe"
-              />
+                     type="text"
+                     name="cuisine"
+                     class="form-input"
+                     placeholder="e.g., Italian, Mexican, Asian" />
             </div>
+            <div class="form-group">
+              <label class="form-label">Course</label>
+              <input
+                     type="text"
+                     name="course"
+                     class="form-input"
+                     placeholder="e.g., Main Course, Dessert, Appetizer" />
+            </div>
+          </div>
 
-            <div class="form-actions">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                onclick="closeCreateRecipeModal()"
-              >
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-success">
-                <span>✨</span>
-                Create Recipe
-              </button>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Servings</label>
+              <input
+                     type="text"
+                     name="servings"
+                     class="form-input"
+                     placeholder="e.g., 4 servings" />
             </div>
-          </form>
-        </div>
+            <div class="form-group">
+              <label class="form-label">Prep Time</label>
+              <input
+                     type="text"
+                     name="prep_time"
+                     class="form-input"
+                     placeholder="e.g., 30 minutes" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cook Time</label>
+              <input
+                     type="text"
+                     name="cook_time"
+                     class="form-input"
+                     placeholder="e.g., 1 hour" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tags</label>
+            <input
+                   type="text"
+                   name="tags"
+                   class="form-input"
+                   placeholder="Separate tags with commas" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select name="category_id" class="form-input" id="categorySelect">
+              <option value="">No Category</option>
+            </select>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">🥘 Ingredients</h3>
+            <div id="ingredientsContainer">
+              <div class="ingredient-input-row">
+                <input
+                       type="text"
+                       class="form-input ingredient-input"
+                       placeholder="e.g., 1 cup flour"
+                       data-index="0" />
+                <button
+                        type="button"
+                        class="btn-icon remove-ingredient"
+                        onclick="removeIngredient(0)">
+                  ×
+                </button>
+              </div>
+            </div>
+            <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="addIngredient()">
+              <span>➕</span>
+              Add Ingredient
+            </button>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">📝 Instructions</h3>
+            <div id="instructionsContainer">
+              <div class="instruction-input-row">
+                <div class="instruction-number">1</div>
+                <textarea
+                          class="form-textarea instruction-input"
+                          placeholder="Enter instruction step"
+                          data-index="0"></textarea>
+                <button
+                        type="button"
+                        class="btn-icon remove-instruction"
+                        onclick="removeInstruction(0)">
+                  ×
+                </button>
+              </div>
+            </div>
+            <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="addInstruction()">
+              <span>➕</span>
+              Add Instruction
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Source URL (Optional)</label>
+            <input
+                   type="url"
+                   name="source_url"
+                   class="form-input"
+                   placeholder="https://example.com/recipe" />
+          </div>
+
+          <div class="form-actions">
+            <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="closeCreateRecipeModal()">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-success">
+              <span>✨</span>
+              Create Recipe
+            </button>
+          </div>
+        </form>
       </div>
     </div>
+  </div>
 
-    <script>
-      let recipes = [];
-      let metricMode = false; // per-recipe display toggle
-      let categories = [];
-      let currentRecipe = null;
-      let currentCategory = 'all';
-      let scaleFactor = 1;
+  <script>
+    let recipes = [];
+    let metricMode = false; // per-recipe display toggle
+    let categories = [];
+    let currentRecipe = null;
+    let currentCategory = 'all';
+    let scaleFactor = 1;
 
-      // Load initial data
-      async function loadData() {
-        await Promise.all([loadRecipes(), loadCategories()]);
-      }
+    // Load initial data
+    async function loadData() {
+      await Promise.all([loadRecipes(), loadCategories()]);
+    }
 
-      async function loadRecipes() {
-        try {
-          const response = await fetch('/api/recipes');
-          const data = await response.json();
-          if (data.success) {
-            recipes = data.recipes;
-            renderRecipes();
-            updateCounts();
-          }
-        } catch (error) {
-          console.error('Error loading recipes:', error);
-          document.getElementById('recipeGrid').innerHTML = `
+    async function loadRecipes() {
+      try {
+        const response = await fetch('/api/recipes');
+        const data = await response.json();
+        if (data.success) {
+          recipes = data.recipes;
+          renderRecipes();
+          updateCounts();
+        }
+      } catch (error) {
+        console.error('Error loading recipes:', error);
+        document.getElementById('recipeGrid').innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">⚠️</div>
               <h3>Error loading recipes</h3>
               <p>Please try refreshing the page</p>
             </div>
           `;
-        }
       }
+    }
 
-      async function loadCategories() {
-        try {
-          const response = await fetch('/api/categories');
-          const data = await response.json();
-          if (data.success) {
-            categories = data.categories;
-            renderCategories();
-          }
-        } catch (error) {
-          console.error('Error loading categories:', error);
+    async function loadCategories() {
+      try {
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        if (data.success) {
+          categories = data.categories;
+          renderCategories();
         }
+      } catch (error) {
+        console.error('Error loading categories:', error);
       }
+    }
 
-      function renderCategories() {
-        const categoryList = document.getElementById('categoryList');
-        const allCategory = categoryList.querySelector('[data-category="all"]');
+    function renderCategories() {
+      const categoryList = document.getElementById('categoryList');
+      const allCategory = categoryList.querySelector('[data-category="all"]');
 
-        // Clear existing categories except "All"
-        categoryList.innerHTML = '';
-        categoryList.appendChild(allCategory);
+      // Clear existing categories except "All"
+      categoryList.innerHTML = '';
+      categoryList.appendChild(allCategory);
 
-        categories.forEach(category => {
-          const count = recipes.filter(
-            r => r.category_id === category.id
-          ).length;
-          const item = document.createElement('div');
-          item.className = `category-item ${
-            currentCategory === category.id ? 'active' : ''
+      categories.forEach(category => {
+        const count = recipes.filter(
+          r => r.category_id === category.id
+        ).length;
+        const item = document.createElement('div');
+        item.className = `category-item ${currentCategory === category.id ? 'active' : ''
           }`;
-          item.dataset.category = category.id;
-          item.innerHTML = `
+        item.dataset.category = category.id;
+        item.innerHTML = `
             <div class="category-color" style="background: ${category.color};"></div>
             <span class="category-name">${category.name}</span>
             <span class="category-count">${count}</span>
           `;
-          item.onclick = () => filterByCategory(category.id);
-          categoryList.appendChild(item);
-        });
+        item.onclick = () => filterByCategory(category.id);
+        categoryList.appendChild(item);
+      });
 
-        // Also sync mobile category sheet
-        syncCategorySheet();
-      }
+      // Also sync mobile category sheet
+      syncCategorySheet();
+    }
 
-      function syncCategorySheet() {
-        const sheetList = document.getElementById('categoryListMobile');
-        if (!sheetList) return;
+    function syncCategorySheet() {
+      const sheetList = document.getElementById('categoryListMobile');
+      if (!sheetList) return;
 
-        // Build All item
-        sheetList.innerHTML = '';
-        const allItem = document.createElement('div');
-        allItem.className = `category-item ${currentCategory === 'all' ? 'active' : ''}`;
-        allItem.dataset.category = 'all';
-        allItem.innerHTML = `
+      // Build All item
+      sheetList.innerHTML = '';
+      const allItem = document.createElement('div');
+      allItem.className = `category-item ${currentCategory === 'all' ? 'active' : ''}`;
+      allItem.dataset.category = 'all';
+      allItem.innerHTML = `
           <div class="category-color" style="background: var(--text-3);"></div>
           <span class="category-name">All Recipes</span>
           <span class="category-count">${recipes.length}</span>
         `;
-        allItem.onclick = () => { filterByCategory('all'); toggleCategorySheet(false); };
-        sheetList.appendChild(allItem);
+      allItem.onclick = () => { filterByCategory('all'); toggleCategorySheet(false); };
+      sheetList.appendChild(allItem);
 
-        categories.forEach(category => {
-          const count = recipes.filter(r => r.category_id === category.id).length;
-          const item = document.createElement('div');
-          item.className = `category-item ${currentCategory == category.id ? 'active' : ''}`;
-          item.dataset.category = category.id;
-          item.innerHTML = `
+      categories.forEach(category => {
+        const count = recipes.filter(r => r.category_id === category.id).length;
+        const item = document.createElement('div');
+        item.className = `category-item ${currentCategory == category.id ? 'active' : ''}`;
+        item.dataset.category = category.id;
+        item.innerHTML = `
             <div class="category-color" style="background: ${category.color};"></div>
             <span class="category-name">${category.name}</span>
             <span class="category-count">${count}</span>
           `;
-          item.onclick = () => { filterByCategory(category.id); toggleCategorySheet(false); };
-          sheetList.appendChild(item);
-        });
-      }
-
-      function toggleCategorySheet(force) {
-        const sheet = document.getElementById('categorySheet');
-        if (!sheet) return;
-        if (typeof force === 'boolean') {
-          sheet.classList.toggle('show', force);
-          return;
-        }
-        sheet.classList.toggle('show');
-      }
-
-      // Close category sheet when clicking outside it
-      document.addEventListener('click', (e) => {
-        const sheet = document.getElementById('categorySheet');
-        if (sheet && sheet.classList.contains('show')) {
-          const within = sheet.contains(e.target);
-          const trigger = e.target.closest('.nav-item');
-          if (!within && !trigger) {
-            sheet.classList.remove('show');
-            sheet.setAttribute('aria-hidden', 'true');
-          }
-        }
-
-        // Close mobile actions menu on outside click
-        const actionsMenu = document.getElementById('actionsMenu');
-        const toggleBtn = document.querySelector('.actions-toggle');
-        if (actionsMenu && actionsMenu.classList.contains('show')) {
-          const withinActions = actionsMenu.contains(e.target);
-          const onToggle = toggleBtn && toggleBtn.contains(e.target);
-          if (!withinActions && !onToggle) {
-            actionsMenu.classList.remove('show');
-          }
-        }
+        item.onclick = () => { filterByCategory(category.id); toggleCategorySheet(false); };
+        sheetList.appendChild(item);
       });
+    }
 
-      // Mobile actions menu helpers
-      function toggleActionsMenu(event) {
-        event.preventDefault();
-        const menu = document.getElementById('actionsMenu');
-        if (!menu) return;
-        menu.classList.toggle('show');
+    function toggleCategorySheet(force) {
+      const sheet = document.getElementById('categorySheet');
+      if (!sheet) return;
+      if (typeof force === 'boolean') {
+        sheet.classList.toggle('show', force);
+        return;
       }
-      function closeActionsMenu() {
-        const menu = document.getElementById('actionsMenu');
-        if (menu) menu.classList.remove('show');
+      sheet.classList.toggle('show');
+    }
+
+    // Close category sheet when clicking outside it
+    document.addEventListener('click', (e) => {
+      const sheet = document.getElementById('categorySheet');
+      if (sheet && sheet.classList.contains('show')) {
+        const within = sheet.contains(e.target);
+        const trigger = e.target.closest('.nav-item');
+        if (!within && !trigger) {
+          sheet.classList.remove('show');
+          sheet.setAttribute('aria-hidden', 'true');
+        }
       }
 
-      function renderRecipes() {
-        const grid = document.getElementById('recipeGrid');
-        let filteredRecipes = recipes;
-
-        // Filter by category
-        if (currentCategory !== 'all') {
-          filteredRecipes = filteredRecipes.filter(
-            r => r.category_id == currentCategory
-          );
+      // Close mobile actions menu on outside click
+      const actionsMenu = document.getElementById('actionsMenu');
+      const toggleBtn = document.querySelector('.actions-toggle');
+      if (actionsMenu && actionsMenu.classList.contains('show')) {
+        const withinActions = actionsMenu.contains(e.target);
+        const onToggle = toggleBtn && toggleBtn.contains(e.target);
+        if (!withinActions && !onToggle) {
+          actionsMenu.classList.remove('show');
         }
+      }
+    });
 
-        // Filter by search
-        const searchTerm = document
-          .getElementById('searchInput')
-          .value.toLowerCase();
-        if (searchTerm) {
-          filteredRecipes = filteredRecipes.filter(
-            r =>
-              r.title.toLowerCase().includes(searchTerm) ||
-              (r.cuisine && r.cuisine.toLowerCase().includes(searchTerm)) ||
-              (r.tags && r.tags.toLowerCase().includes(searchTerm))
-          );
-        }
+    // Mobile actions menu helpers
+    function toggleActionsMenu(event) {
+      event.preventDefault();
+      const menu = document.getElementById('actionsMenu');
+      if (!menu) return;
+      menu.classList.toggle('show');
+    }
+    function closeActionsMenu() {
+      const menu = document.getElementById('actionsMenu');
+      if (menu) menu.classList.remove('show');
+    }
 
-        if (filteredRecipes.length === 0) {
-          grid.innerHTML = `
+    function renderRecipes() {
+      const grid = document.getElementById('recipeGrid');
+      let filteredRecipes = recipes;
+
+      // Filter by category
+      if (currentCategory !== 'all') {
+        filteredRecipes = filteredRecipes.filter(
+          r => r.category_id == currentCategory
+        );
+      }
+
+      // Filter by search
+      const searchTerm = document
+        .getElementById('searchInput')
+        .value.toLowerCase();
+      if (searchTerm) {
+        filteredRecipes = filteredRecipes.filter(
+          r =>
+            r.title.toLowerCase().includes(searchTerm) ||
+            (r.cuisine && r.cuisine.toLowerCase().includes(searchTerm)) ||
+            (r.tags && r.tags.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      if (filteredRecipes.length === 0) {
+        grid.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">🍽️</div>
               <h3>No recipes found</h3>
@@ -628,117 +600,108 @@
               </a>
             </div>
           `;
-          return;
-        }
+        return;
+      }
 
-        grid.innerHTML = filteredRecipes
-          .map(
-            recipe => `
+      grid.innerHTML = filteredRecipes
+        .map(
+          recipe => `
             <div class="recipe-card" onclick="viewRecipe(${recipe.id})">
               <div class="recipe-card-header">
                 <h3 class="recipe-title">${recipe.title}</h3>
                 <div class="recipe-meta">
-                  ${
-                    recipe.servings
-                      ? `<div class="recipe-meta-item">👥 ${recipe.servings}</div>`
-                      : ''
-                  }
-                  ${
-                    recipe.prep_time
-                      ? `<div class="recipe-meta-item">⏱️ ${recipe.prep_time}</div>`
-                      : ''
-                  }
-                  ${
-                    recipe.cook_time
-                      ? `<div class="recipe-meta-item">🔥 ${recipe.cook_time}</div>`
-                      : ''
-                  }
+                  ${recipe.servings
+              ? `<div class="recipe-meta-item">👥 ${recipe.servings}</div>`
+              : ''
+            }
+                  ${recipe.prep_time
+              ? `<div class="recipe-meta-item">⏱️ ${recipe.prep_time}</div>`
+              : ''
+            }
+                  ${recipe.cook_time
+              ? `<div class="recipe-meta-item">🔥 ${recipe.cook_time}</div>`
+              : ''
+            }
                 </div>
               </div>
-              ${
-                recipe.tags
-                  ? `
+              ${recipe.tags
+              ? `
                 <div class="recipe-tags">
                   ${recipe.tags
-                    .split(',')
-                    .map(tag => `<span class="tag">${tag.trim()}</span>`)
-                    .join('')}
+                .split(',')
+                .map(tag => `<span class="tag">${tag.trim()}</span>`)
+                .join('')}
                 </div>
               `
-                  : ''
-              }
+              : ''
+            }
             </div>
           `
-          )
-          .join('');
-      }
+        )
+        .join('');
+    }
 
-      function isMobileViewport() {
-        return window.matchMedia ? window.matchMedia('(max-width: 767px)').matches : (window.innerWidth <= 767);
-      }
+    function isMobileViewport() {
+      return window.matchMedia ? window.matchMedia('(max-width: 767px)').matches : (window.innerWidth <= 767);
+    }
 
-      function showMobileCloseBar(show) {
-        const closeBar = document.getElementById('mobileCloseBar');
-        if (!closeBar) return;
-        // Only show on mobile viewport
-        closeBar.style.display = show && isMobileViewport() ? 'inline-flex' : 'none';
-      }
+    function showMobileCloseBar(show) {
+      const closeBar = document.getElementById('mobileCloseBar');
+      if (!closeBar) return;
+      // Only show on mobile viewport
+      closeBar.style.display = show && isMobileViewport() ? 'inline-flex' : 'none';
+    }
 
-      async function viewRecipe(id) {
-        try {
-          const response = await fetch(`/api/recipe/${id}`);
-          const data = await response.json();
-          if (data.success) {
-            currentRecipe = data.recipe;
-            scaleFactor = 1;
-            renderRecipeDetail();
-            document.getElementById('recipeModal').classList.add('active');
-            // Show mobile close bar if on small screens
-            showMobileCloseBar(true);
-          }
-        } catch (error) {
-          console.error('Error loading recipe:', error);
+    async function viewRecipe(id) {
+      try {
+        const response = await fetch(`/api/recipe/${id}`);
+        const data = await response.json();
+        if (data.success) {
+          currentRecipe = data.recipe;
+          scaleFactor = 1;
+          renderRecipeDetail();
+          document.getElementById('recipeModal').classList.add('active');
+          // Show mobile close bar if on small screens
+          showMobileCloseBar(true);
         }
+      } catch (error) {
+        console.error('Error loading recipe:', error);
       }
+    }
 
-      function renderRecipeDetail() {
-        if (!currentRecipe) return;
-        // ensure metricMode starts false each time a recipe is opened
-        metricMode = false;
+    function renderRecipeDetail() {
+      if (!currentRecipe) return;
+      // ensure metricMode starts false each time a recipe is opened
+      metricMode = false;
 
-        const originalServings = parseServings(currentRecipe.servings);
-        const hasServings = originalServings !== null;
+      const originalServings = parseServings(currentRecipe.servings);
+      const hasServings = originalServings !== null;
 
-        const content = document.getElementById('recipeDetailContent');
-        content.innerHTML = `
+      const content = document.getElementById('recipeDetailContent');
+      content.innerHTML = `
           <div class="recipe-detail-header">
             <h1 class="recipe-detail-title">${currentRecipe.title}</h1>
             <div class="recipe-detail-meta">
-              ${
-                currentRecipe.cuisine
-                  ? `<div class="recipe-detail-meta-item">🍽️ ${currentRecipe.cuisine}</div>`
-                  : ''
-              }
-              ${
-                currentRecipe.course
-                  ? `<div class="recipe-detail-meta-item">📍 ${currentRecipe.course}</div>`
-                  : ''
-              }
-              ${
-                currentRecipe.servings
-                  ? `<div class="recipe-detail-meta-item">👥 ${currentRecipe.servings}</div>`
-                  : ''
-              }
-              ${
-                currentRecipe.prep_time
-                  ? `<div class="recipe-detail-meta-item">⏱️ Prep: ${currentRecipe.prep_time}</div>`
-                  : ''
-              }
-              ${
-                currentRecipe.cook_time
-                  ? `<div class="recipe-detail-meta-item">🔥 Cook: ${currentRecipe.cook_time}</div>`
-                  : ''
-              }
+              ${currentRecipe.cuisine
+          ? `<div class="recipe-detail-meta-item">🍽️ ${currentRecipe.cuisine}</div>`
+          : ''
+        }
+              ${currentRecipe.course
+          ? `<div class="recipe-detail-meta-item">📍 ${currentRecipe.course}</div>`
+          : ''
+        }
+              ${currentRecipe.servings
+          ? `<div class="recipe-detail-meta-item">👥 ${currentRecipe.servings}</div>`
+          : ''
+        }
+              ${currentRecipe.prep_time
+          ? `<div class="recipe-detail-meta-item">⏱️ Prep: ${currentRecipe.prep_time}</div>`
+          : ''
+        }
+              ${currentRecipe.cook_time
+          ? `<div class="recipe-detail-meta-item">🔥 Cook: ${currentRecipe.cook_time}</div>`
+          : ''
+        }
             </div>
             <div class="recipe-detail-actions">
               <!-- Desktop actions (visible md+) -->
@@ -786,31 +749,29 @@
               </ul>
             </div>
 
-            ${
-              currentRecipe.instructions &&
-              currentRecipe.instructions.length > 0
-                ? `
+            ${currentRecipe.instructions &&
+          currentRecipe.instructions.length > 0
+          ? `
               <div class="recipe-section">
                 <h3 class="recipe-section-title">📝 Instructions</h3>
                 <ol class="instructions-list">
                   ${currentRecipe.instructions
-                    .map(
-                      inst => `
+            .map(
+              inst => `
                     <li class="instruction-item">
                       <div class="instruction-text">${inst.instruction}</div>
                     </li>
                   `
-                    )
-                    .join('')}
+            )
+            .join('')}
                 </ol>
               </div>
             `
-                : ''
-            }
+          : ''
+        }
 
-            ${
-              currentRecipe.source_url
-                ? `
+            ${currentRecipe.source_url
+          ? `
               <div class="recipe-section">
                 <h3 class="recipe-section-title">🔗 Source</h3>
                 <a href="${currentRecipe.source_url}" target="_blank" class="btn btn-secondary">
@@ -818,918 +779,918 @@
                 </a>
               </div>
             `
-                : ''
-            }
+          : ''
+        }
           </div>
         `;
-      }
+    }
 
-      function renderIngredients() {
-        if (!currentRecipe || !currentRecipe.ingredients) return '';
+    function renderIngredients() {
+      if (!currentRecipe || !currentRecipe.ingredients) return '';
 
-        if (scaleFactor === 1) {
-          // Choose display text based on metricMode
-          return currentRecipe.ingredients
-            .map((ing, idx) => {
-              const text = metricMode
-                ? ing.display_text || ing.original_text // display_text is metric-first with imperial in parentheses when available
-                : ing.original_text || ing.display_text || ''; // prefer raw/original when imperial-first is desired
-              return `
+      if (scaleFactor === 1) {
+        // Choose display text based on metricMode
+        return currentRecipe.ingredients
+          .map((ing, idx) => {
+            const text = metricMode
+              ? ing.display_text || ing.original_text // display_text is metric-first with imperial in parentheses when available
+              : ing.original_text || ing.display_text || ''; // prefer raw/original when imperial-first is desired
+            return `
               <li class="ingredient-item" data-index="${idx}">
                 <input type="checkbox" class="ingredient-checkbox" onchange="toggleIngredient(${idx})">
                 <span class="ingredient-text">${text}</span>
               </li>
             `;
-            })
-            .join('');
-        } else {
-          fetchScaledIngredients();
-          return '<li class="ingredient-item">Calculating scaled amounts...</li>';
-        }
+          })
+          .join('');
+      } else {
+        fetchScaledIngredients();
+        return '<li class="ingredient-item">Calculating scaled amounts...</li>';
       }
+    }
 
-      async function fetchScaledIngredients() {
-        try {
-          const response = await fetch(
-            `/api/recipe/${currentRecipe.id}/scale/${scaleFactor}`
-          );
-          const data = await response.json();
-          if (data.success) {
-            const list = document.getElementById('ingredientsList');
-            list.innerHTML = data.ingredients
-              .map((ing, idx) => {
-                // scaled_text is metric-first with imperial reference in parentheses when available
-                const text = metricMode
-                  ? ing.scaled_text || ing.display_text || ing.original_text
-                  : ing.original_text || ing.scaled_text || ing.display_text;
-                return `
+    async function fetchScaledIngredients() {
+      try {
+        const response = await fetch(
+          `/api/recipe/${currentRecipe.id}/scale/${scaleFactor}`
+        );
+        const data = await response.json();
+        if (data.success) {
+          const list = document.getElementById('ingredientsList');
+          list.innerHTML = data.ingredients
+            .map((ing, idx) => {
+              // scaled_text is metric-first with imperial reference in parentheses when available
+              const text = metricMode
+                ? ing.scaled_text || ing.display_text || ing.original_text
+                : ing.original_text || ing.scaled_text || ing.display_text;
+              return `
                 <li class="ingredient-item" data-index="${idx}">
                   <input type="checkbox" class="ingredient-checkbox" onchange="toggleIngredient(${idx})">
                   <span class="ingredient-text">${text}</span>
                 </li>
               `;
-              })
-              .join('');
-          }
-        } catch (error) {
-          console.error('Error scaling ingredients:', error);
+            })
+            .join('');
         }
+      } catch (error) {
+        console.error('Error scaling ingredients:', error);
       }
+    }
 
-      function changeScale(delta) {
-        scaleFactor = Math.max(0.5, Math.min(10, scaleFactor + delta));
-        document.querySelector(
-          '.scale-display'
-        ).textContent = `${scaleFactor}x`;
-        document.getElementById('ingredientsList').innerHTML =
-          renderIngredients();
-      }
+    function changeScale(delta) {
+      scaleFactor = Math.max(0.5, Math.min(10, scaleFactor + delta));
+      document.querySelector(
+        '.scale-display'
+      ).textContent = `${scaleFactor}x`;
+      document.getElementById('ingredientsList').innerHTML =
+        renderIngredients();
+    }
 
-      function parseServings(servingsText) {
-        if (!servingsText) return null;
-        const match = servingsText.match(/(\d+(?:\.\d+)?)/);
-        return match ? parseFloat(match[1]) : null;
-      }
+    function parseServings(servingsText) {
+      if (!servingsText) return null;
+      const match = servingsText.match(/(\d+(?:\.\d+)?)/);
+      return match ? parseFloat(match[1]) : null;
+    }
 
-      async function scaleToServings(desiredServings) {
-        const servings = parseFloat(desiredServings);
-        if (isNaN(servings) || servings <= 0) return;
+    async function scaleToServings(desiredServings) {
+      const servings = parseFloat(desiredServings);
+      if (isNaN(servings) || servings <= 0) return;
 
-        try {
-          const response = await fetch(
-            `/api/recipe/${currentRecipe.id}/scale-to-servings/${servings}`
-          );
-          const data = await response.json();
-          if (data.success) {
-            scaleFactor = data.scaleFactor;
-            const list = document.getElementById('ingredientsList');
-            list.innerHTML = data.ingredients
-              .map(
-                (ing, idx) => `
+      try {
+        const response = await fetch(
+          `/api/recipe/${currentRecipe.id}/scale-to-servings/${servings}`
+        );
+        const data = await response.json();
+        if (data.success) {
+          scaleFactor = data.scaleFactor;
+          const list = document.getElementById('ingredientsList');
+          list.innerHTML = data.ingredients
+            .map(
+              (ing, idx) => `
                 <li class="ingredient-item" data-index="${idx}">
                   <input type="checkbox" class="ingredient-checkbox" onchange="toggleIngredient(${idx})">
-                  <span class="ingredient-text">${
-                    ing.scaled_text || ing.original_text
-                  }</span>
+                  <span class="ingredient-text">${ing.scaled_text || ing.original_text
+                }</span>
                 </li>
               `
-              )
-              .join('');
-          }
-        } catch (error) {
-          console.error('Error scaling ingredients:', error);
+            )
+            .join('');
         }
+      } catch (error) {
+        console.error('Error scaling ingredients:', error);
       }
+    }
 
-      // Increment/decrement the servings input by 1 and re-scale
-      function stepServings(delta) {
-        const input = document.getElementById('servingsInput');
-        if (!input) return;
-        const current = parseFloat(input.value) || 1;
-        const next = Math.max(1, Math.round(current + delta));
-        input.value = next;
-        scaleToServings(next);
-      }
+    // Increment/decrement the servings input by 1 and re-scale
+    function stepServings(delta) {
+      const input = document.getElementById('servingsInput');
+      if (!input) return;
+      const current = parseFloat(input.value) || 1;
+      const next = Math.max(1, Math.round(current + delta));
+      input.value = next;
+      scaleToServings(next);
+    }
 
-      function toggleIngredient(index) {
-        const item = document.querySelector(`[data-index="${index}"]`);
-        item.classList.toggle('checked');
-      }
+    function toggleIngredient(index) {
+      const item = document.querySelector(`[data-index="${index}"]`);
+      item.classList.toggle('checked');
+    }
 
-      function closeRecipeModal() {
-        document.getElementById('recipeModal').classList.remove('active');
-        showMobileCloseBar(false);
-        currentRecipe = null;
-        scaleFactor = 1;
-        metricMode = false;
-      }
+    function closeRecipeModal() {
+      document.getElementById('recipeModal').classList.remove('active');
+      showMobileCloseBar(false);
+      currentRecipe = null;
+      scaleFactor = 1;
+      metricMode = false;
+    }
 
-      // Begin editing current recipe using the existing Create form UI
-      function startEditRecipe() {
-        if (!currentRecipe) return;
+    // Begin editing current recipe using the existing Create form UI
+    function startEditRecipe() {
+      if (!currentRecipe) return;
 
-        // Populate dropdown options first
-        populateCategoryDropdown();
+      // Populate dropdown options first
+      populateCategoryDropdown();
 
-        // Switch to the createRecipeModal which we will reuse for editing
-        document.getElementById('createRecipeModal').classList.add('active');
+      // Switch to the createRecipeModal which we will reuse for editing
+      document.getElementById('createRecipeModal').classList.add('active');
 
-        // Ensure create/import toggle exists but keep manual mode for editing
-        ensureCreateModeToggle();
-        // Force manual mode styling if toggle exists
-        try {
-          const manualBtn = document.getElementById('modeManualBtn');
-          const importBtn = document.getElementById('modeImportBtn');
-          const importRow = document.getElementById('importUrlRow');
-          if (manualBtn && importBtn && importRow) {
-            importRow.style.display = 'none';
-            manualBtn.classList.add('btn-primary');
-            manualBtn.classList.remove('btn-secondary');
-            importBtn.classList.add('btn-secondary');
-            importBtn.classList.remove('btn-primary');
-          }
-        } catch {}
+      // Ensure create/import toggle exists but keep manual mode for editing
+      ensureCreateModeToggle();
+      // Force manual mode styling if toggle exists
+      try {
+        const manualBtn = document.getElementById('modeManualBtn');
+        const importBtn = document.getElementById('modeImportBtn');
+        const importRow = document.getElementById('importUrlRow');
+        if (manualBtn && importBtn && importRow) {
+          importRow.style.display = 'none';
+          manualBtn.classList.add('btn-primary');
+          manualBtn.classList.remove('btn-secondary');
+          importBtn.classList.add('btn-secondary');
+          importBtn.classList.remove('btn-primary');
+        }
+      } catch { }
 
-        // Fill form fields with the currentRecipe data
-        const form = document.getElementById('createRecipeForm');
-        form.querySelector('input[name="title"]').value = currentRecipe.title || '';
-        form.querySelector('input[name="cuisine"]').value = currentRecipe.cuisine || '';
-        form.querySelector('input[name="course"]').value = currentRecipe.course || '';
-        form.querySelector('input[name="servings"]').value = currentRecipe.servings || '';
-        form.querySelector('input[name="prep_time"]').value = currentRecipe.prep_time || '';
-        form.querySelector('input[name="cook_time"]').value = currentRecipe.cook_time || '';
-        form.querySelector('input[name="tags"]').value = currentRecipe.tags || '';
-        const categorySelect = document.getElementById('categorySelect');
-        if (categorySelect) categorySelect.value = currentRecipe.category_id || '';
+      // Fill form fields with the currentRecipe data
+      const form = document.getElementById('createRecipeForm');
+      form.querySelector('input[name="title"]').value = currentRecipe.title || '';
+      form.querySelector('input[name="cuisine"]').value = currentRecipe.cuisine || '';
+      form.querySelector('input[name="course"]').value = currentRecipe.course || '';
+      form.querySelector('input[name="servings"]').value = currentRecipe.servings || '';
+      form.querySelector('input[name="prep_time"]').value = currentRecipe.prep_time || '';
+      form.querySelector('input[name="cook_time"]').value = currentRecipe.cook_time || '';
+      form.querySelector('input[name="tags"]').value = currentRecipe.tags || '';
+      const categorySelect = document.getElementById('categorySelect');
+      if (categorySelect) categorySelect.value = currentRecipe.category_id || '';
 
-        // Ingredients UI
-        const ingredientsContainer = document.getElementById('ingredientsContainer');
-        ingredientsContainer.innerHTML = '';
-        ingredientIndex = 0;
-        (currentRecipe.ingredients || []).forEach((ing, idx) => {
-          const row = document.createElement('div');
-          row.className = 'ingredient-input-row';
-          const value = (ing.original_text || ing.display_text || '').replace(/"/g, '"');
-          row.innerHTML = `
+      // Ingredients UI
+      const ingredientsContainer = document.getElementById('ingredientsContainer');
+      ingredientsContainer.innerHTML = '';
+      ingredientIndex = 0;
+      (currentRecipe.ingredients || []).forEach((ing, idx) => {
+        const row = document.createElement('div');
+        row.className = 'ingredient-input-row';
+        const value = (ing.original_text || ing.display_text || '').replace(/"/g, '"');
+        row.innerHTML = `
             <input type="text" class="form-input ingredient-input" placeholder="e.g., 1 cup flour" data-index="${idx}" value="${value}">
             <button type="button" class="btn-icon remove-ingredient" onclick="removeIngredient(${idx})">×</button>
           `;
-          ingredientsContainer.appendChild(row);
-          ingredientIndex = idx;
-        });
-        if (!currentRecipe.ingredients || currentRecipe.ingredients.length === 0) {
-          ingredientsContainer.innerHTML = `
+        ingredientsContainer.appendChild(row);
+        ingredientIndex = idx;
+      });
+      if (!currentRecipe.ingredients || currentRecipe.ingredients.length === 0) {
+        ingredientsContainer.innerHTML = `
             <div class="ingredient-input-row">
               <input type="text" class="form-input ingredient-input" placeholder="e.g., 1 cup flour" data-index="0">
               <button type="button" class="btn-icon remove-ingredient" onclick="removeIngredient(0)">×</button>
             </div>
           `;
-          ingredientIndex = 0;
-        }
+        ingredientIndex = 0;
+      }
 
-        // Instructions UI
-        const instructionsContainer = document.getElementById('instructionsContainer');
-        instructionsContainer.innerHTML = '';
-        instructionIndex = 0;
-        (currentRecipe.instructions || []).forEach((inst, idx) => {
-          const value = (inst.instruction || '')
-            .replace(/</g, '<')
-            .replace(/>/g, '>');
-          const row = document.createElement('div');
-          row.className = 'instruction-input-row';
-          row.innerHTML = `
+      // Instructions UI
+      const instructionsContainer = document.getElementById('instructionsContainer');
+      instructionsContainer.innerHTML = '';
+      instructionIndex = 0;
+      (currentRecipe.instructions || []).forEach((inst, idx) => {
+        const value = (inst.instruction || '')
+          .replace(/</g, '<')
+          .replace(/>/g, '>');
+        const row = document.createElement('div');
+        row.className = 'instruction-input-row';
+        row.innerHTML = `
             <div class="instruction-number">${idx + 1}</div>
             <textarea class="form-textarea instruction-input" placeholder="Enter instruction step" data-index="${idx}">${value}</textarea>
             <button type="button" class="btn-icon remove-instruction" onclick="removeInstruction(${idx})">×</button>
           `;
-          instructionsContainer.appendChild(row);
-          instructionIndex = idx;
-        });
-        if (!currentRecipe.instructions || currentRecipe.instructions.length === 0) {
-          instructionsContainer.innerHTML = `
+        instructionsContainer.appendChild(row);
+        instructionIndex = idx;
+      });
+      if (!currentRecipe.instructions || currentRecipe.instructions.length === 0) {
+        instructionsContainer.innerHTML = `
             <div class="instruction-input-row">
               <div class="instruction-number">1</div>
               <textarea class="form-textarea instruction-input" placeholder="Enter instruction step" data-index="0"></textarea>
               <button type="button" class="btn-icon remove-instruction" onclick="removeInstruction(0)">×</button>
             </div>
           `;
-          instructionIndex = 0;
-        }
-        updateInstructionNumbers();
-
-        // Replace the form submit handler temporarily to perform update
-        attachEditSubmitHandler(currentRecipe.id);
+        instructionIndex = 0;
       }
+      updateInstructionNumbers();
 
-      // Attach a one-off submit handler to update an existing recipe
-      function attachEditSubmitHandler(recipeId) {
-        const form = document.getElementById('createRecipeForm');
+      // Replace the form submit handler temporarily to perform update
+      attachEditSubmitHandler(currentRecipe.id);
+    }
 
-        // Remove existing handler if we added one before
-        if (form._editHandler) {
-          form.removeEventListener('submit', form._editHandler);
-          delete form._editHandler;
-        }
-        // Also prevent the "create" submit handler from running during edit by stopping propagation
-        const handler = async (e) => {
-          e.preventDefault();
-          e.stopImmediatePropagation();
+    // Attach a one-off submit handler to update an existing recipe
+    function attachEditSubmitHandler(recipeId) {
+      const form = document.getElementById('createRecipeForm');
 
-          // Collect form data (mirrors create handler)
-          const formData = new FormData(form);
-          const recipeData = {};
-          for (let [key, value] of formData.entries()) {
-            if (value.trim()) {
-              recipeData[key] = value.trim();
-            }
+      // Remove existing handler if we added one before
+      if (form._editHandler) {
+        form.removeEventListener('submit', form._editHandler);
+        delete form._editHandler;
+      }
+      // Also prevent the "create" submit handler from running during edit by stopping propagation
+      const handler = async (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        // Collect form data (mirrors create handler)
+        const formData = new FormData(form);
+        const recipeData = {};
+        for (let [key, value] of formData.entries()) {
+          if (value.trim()) {
+            recipeData[key] = value.trim();
           }
+        }
 
-          // Ingredients
-          const ingredientInputs = document.querySelectorAll('.ingredient-input');
-          const ingredients = [];
-          ingredientInputs.forEach(input => {
-            if (input.value.trim()) {
-              ingredients.push({
-                original_text: input.value.trim(),
-                display_text: input.value.trim(),
-              });
-            }
-          });
-          recipeData.ingredients = ingredients;
-
-          // Instructions
-          const instructionInputs = document.querySelectorAll('.instruction-input');
-          const instructions = [];
-          instructionInputs.forEach(input => {
-            if (input.value.trim()) {
-              instructions.push({ instruction: input.value.trim() });
-            }
-          });
-          recipeData.instructions = instructions;
-
-          try {
-            const response = await fetch(`/api/recipe/${recipeId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(recipeData),
+        // Ingredients
+        const ingredientInputs = document.querySelectorAll('.ingredient-input');
+        const ingredients = [];
+        ingredientInputs.forEach(input => {
+          if (input.value.trim()) {
+            ingredients.push({
+              original_text: input.value.trim(),
+              display_text: input.value.trim(),
             });
-            const result = await response.json();
-            if (result.success) {
-              alert('Recipe updated successfully! ✅');
-              closeCreateRecipeModal();
-              closeRecipeModal();
-              loadData();
-            } else {
-              alert('Error updating recipe: ' + (result.error || 'Unknown error'));
-            }
-          } catch (err) {
-            console.error('Error updating recipe:', err);
-            alert('Error updating recipe. Please try again.');
           }
-        };
-
-        form.addEventListener('submit', handler);
-        form._editHandler = handler;
-      }
-
-      function filterByCategory(categoryId) {
-        currentCategory = categoryId;
-        document.querySelectorAll('.category-item').forEach(item => {
-          item.classList.toggle('active', item.dataset.category == categoryId);
         });
+        recipeData.ingredients = ingredients;
+
+        // Instructions
+        const instructionInputs = document.querySelectorAll('.instruction-input');
+        const instructions = [];
+        instructionInputs.forEach(input => {
+          if (input.value.trim()) {
+            instructions.push({ instruction: input.value.trim() });
+          }
+        });
+        recipeData.instructions = instructions;
+
+        try {
+          const response = await fetch(`/api/recipe/${recipeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(recipeData),
+          });
+          const result = await response.json();
+          if (result.success) {
+            alert('Recipe updated successfully! ✅');
+            closeCreateRecipeModal();
+            closeRecipeModal();
+            loadData();
+          } else {
+            alert('Error updating recipe: ' + (result.error || 'Unknown error'));
+          }
+        } catch (err) {
+          console.error('Error updating recipe:', err);
+          alert('Error updating recipe. Please try again.');
+        }
+      };
+
+      form.addEventListener('submit', handler);
+      form._editHandler = handler;
+    }
+
+    function filterByCategory(categoryId) {
+      currentCategory = categoryId;
+      document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.category == categoryId);
+      });
+      renderRecipes();
+    }
+
+    function updateCounts() {
+      document.getElementById('allCount').textContent = recipes.length;
+      renderCategories();
+    }
+
+    // Per-recipe toggle for metric/imperial display
+    function toggleMetricMode() {
+      metricMode = !metricMode;
+      // re-render ingredients list depending on current scaling state
+      if (scaleFactor === 1) {
+        document.getElementById('ingredientsList').innerHTML =
+          renderIngredients();
+      } else {
+        fetchScaledIngredients();
+      }
+    }
+
+    async function importRecipes() {
+      if (!confirm('Import all markdown recipes into the database?')) return;
+
+      try {
+        const response = await fetch('/api/import-markdown', {
+          method: 'POST',
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert(
+            `Successfully imported ${data.imported} of ${data.total} recipes`
+          );
+          loadData();
+        }
+      } catch (error) {
+        alert('Error importing recipes');
+      }
+    }
+
+    async function exportRecipe(id) {
+      try {
+        const response = await fetch(`/api/recipe/${id}/export`);
+        const data = await response.json();
+        if (data.success) {
+          const blob = new Blob([data.markdown], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${currentRecipe.title
+            .replace(/[^a-z0-9]/gi, '-')
+            .toLowerCase()}.md`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        alert('Error exporting recipe');
+      }
+    }
+
+    async function deleteRecipe(id) {
+      if (!confirm('Are you sure you want to delete this recipe?')) return;
+
+      try {
+        const response = await fetch(`/api/recipe/${id}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        if (data.success) {
+          closeRecipeModal();
+          loadData();
+        }
+      } catch (error) {
+        alert('Error deleting recipe');
+      }
+    }
+
+    function showCategoryModal() {
+      const name = prompt('Category name:');
+      if (!name) return;
+
+      const color = prompt('Category color (hex):', '#4CAF50');
+      if (!color) return;
+
+      createCategory(name, color);
+    }
+
+    async function createCategory(name, color) {
+      try {
+        const response = await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, color }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          loadCategories();
+        }
+      } catch (error) {
+        alert('Error creating category');
+      }
+    }
+
+    async function editCategory(recipeId) {
+      const categoryId = prompt('Enter category ID (leave empty to remove):');
+
+      try {
+        const response = await fetch(`/api/recipe/${recipeId}/category`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            categoryId: categoryId ? parseInt(categoryId) : null,
+          }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          loadData();
+          closeRecipeModal();
+        }
+      } catch (error) {
+        alert('Error updating category');
+      }
+    }
+
+    // Search functionality
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', e => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
         renderRecipes();
+      }, 300);
+    });
+
+    // Close modal on outside click
+    document.getElementById('recipeModal').addEventListener('click', e => {
+      if (e.target.id === 'recipeModal') {
+        closeRecipeModal();
       }
+    });
 
-      function updateCounts() {
-        document.getElementById('allCount').textContent = recipes.length;
-        renderCategories();
+    // Close modal on escape key
+    document.addEventListener('keydown', e => {
+      if (
+        e.key === 'Escape' &&
+        document.getElementById('recipeModal').classList.contains('active')
+      ) {
+        closeRecipeModal();
       }
+    });
 
-      // Per-recipe toggle for metric/imperial display
-      function toggleMetricMode() {
-        metricMode = !metricMode;
-        // re-render ingredients list depending on current scaling state
-        if (scaleFactor === 1) {
-          document.getElementById('ingredientsList').innerHTML =
-            renderIngredients();
-        } else {
-          fetchScaledIngredients();
-        }
+    // Toggle mobile close bar on resize/orientation change
+    window.addEventListener('resize', () => {
+      if (document.getElementById('recipeModal').classList.contains('active')) {
+        showMobileCloseBar(true);
       }
-
-      async function importRecipes() {
-        if (!confirm('Import all markdown recipes into the database?')) return;
-
-        try {
-          const response = await fetch('/api/import-markdown', {
-            method: 'POST',
-          });
-          const data = await response.json();
-          if (data.success) {
-            alert(
-              `Successfully imported ${data.imported} of ${data.total} recipes`
-            );
-            loadData();
-          }
-        } catch (error) {
-          alert('Error importing recipes');
-        }
+    });
+    window.addEventListener('orientationchange', () => {
+      if (document.getElementById('recipeModal').classList.contains('active')) {
+        showMobileCloseBar(true);
       }
+    });
 
-      async function exportRecipe(id) {
-        try {
-          const response = await fetch(`/api/recipe/${id}/export`);
-          const data = await response.json();
-          if (data.success) {
-            const blob = new Blob([data.markdown], { type: 'text/markdown' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${currentRecipe.title
-              .replace(/[^a-z0-9]/gi, '-')
-              .toLowerCase()}.md`;
-            a.click();
-            URL.revokeObjectURL(url);
-          }
-        } catch (error) {
-          alert('Error exporting recipe');
-        }
-      }
+    // Create Recipe Modal Functions
+    function showCreateRecipeModal() {
+      populateCategoryDropdown();
+      document.getElementById('createRecipeModal').classList.add('active');
 
-      async function deleteRecipe(id) {
-        if (!confirm('Are you sure you want to delete this recipe?')) return;
+      // Ensure mode toggle UI exists (manual vs URL import)
+      ensureCreateModeToggle();
+    }
 
-        try {
-          const response = await fetch(`/api/recipe/${id}`, {
-            method: 'DELETE',
-          });
-          const data = await response.json();
-          if (data.success) {
-            closeRecipeModal();
-            loadData();
-          }
-        } catch (error) {
-          alert('Error deleting recipe');
-        }
-      }
+    function closeCreateRecipeModal() {
+      document.getElementById('createRecipeModal').classList.remove('active');
+      document.getElementById('createRecipeForm').reset();
+      resetFormInputs();
+    }
 
-      function showCategoryModal() {
-        const name = prompt('Category name:');
-        if (!name) return;
+    function populateCategoryDropdown() {
+      const select = document.getElementById('categorySelect');
+      select.innerHTML = '<option value="">No Category</option>';
 
-        const color = prompt('Category color (hex):', '#4CAF50');
-        if (!color) return;
-
-        createCategory(name, color);
-      }
-
-      async function createCategory(name, color) {
-        try {
-          const response = await fetch('/api/categories', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, color }),
-          });
-          const data = await response.json();
-          if (data.success) {
-            loadCategories();
-          }
-        } catch (error) {
-          alert('Error creating category');
-        }
-      }
-
-      async function editCategory(recipeId) {
-        const categoryId = prompt('Enter category ID (leave empty to remove):');
-
-        try {
-          const response = await fetch(`/api/recipe/${recipeId}/category`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              categoryId: categoryId ? parseInt(categoryId) : null,
-            }),
-          });
-          const data = await response.json();
-          if (data.success) {
-            loadData();
-            closeRecipeModal();
-          }
-        } catch (error) {
-          alert('Error updating category');
-        }
-      }
-
-      // Search functionality
-      let searchTimeout;
-      document.getElementById('searchInput').addEventListener('input', e => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          renderRecipes();
-        }, 300);
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        select.appendChild(option);
       });
+    }
 
-      // Close modal on outside click
-      document.getElementById('recipeModal').addEventListener('click', e => {
-        if (e.target.id === 'recipeModal') {
-          closeRecipeModal();
-        }
-      });
-
-      // Close modal on escape key
-      document.addEventListener('keydown', e => {
-        if (
-          e.key === 'Escape' &&
-          document.getElementById('recipeModal').classList.contains('active')
-        ) {
-          closeRecipeModal();
-        }
-      });
-
-      // Toggle mobile close bar on resize/orientation change
-      window.addEventListener('resize', () => {
-        if (document.getElementById('recipeModal').classList.contains('active')) {
-          showMobileCloseBar(true);
-        }
-      });
-      window.addEventListener('orientationchange', () => {
-        if (document.getElementById('recipeModal').classList.contains('active')) {
-          showMobileCloseBar(true);
-        }
-      });
-
-      // Create Recipe Modal Functions
-      function showCreateRecipeModal() {
-        populateCategoryDropdown();
-        document.getElementById('createRecipeModal').classList.add('active');
-
-        // Ensure mode toggle UI exists (manual vs URL import)
-        ensureCreateModeToggle();
-      }
-
-      function closeCreateRecipeModal() {
-        document.getElementById('createRecipeModal').classList.remove('active');
-        document.getElementById('createRecipeForm').reset();
-        resetFormInputs();
-      }
-
-      function populateCategoryDropdown() {
-        const select = document.getElementById('categorySelect');
-        select.innerHTML = '<option value="">No Category</option>';
-
-        categories.forEach(category => {
-          const option = document.createElement('option');
-          option.value = category.id;
-          option.textContent = category.name;
-          select.appendChild(option);
-        });
-      }
-
-      function resetFormInputs() {
-        // Reset ingredients to single input
-        const ingredientsContainer = document.getElementById(
-          'ingredientsContainer'
-        );
-        ingredientsContainer.innerHTML = `
+    function resetFormInputs() {
+      // Reset ingredients to single input
+      const ingredientsContainer = document.getElementById(
+        'ingredientsContainer'
+      );
+      ingredientsContainer.innerHTML = `
           <div class="ingredient-input-row">
             <input type="text" class="form-input ingredient-input" placeholder="e.g., 1 cup flour" data-index="0">
             <button type="button" class="btn-icon remove-ingredient" onclick="removeIngredient(0)">×</button>
           </div>
         `;
 
-        // Reset instructions to single input
-        const instructionsContainer = document.getElementById(
-          'instructionsContainer'
-        );
-        instructionsContainer.innerHTML = `
+      // Reset instructions to single input
+      const instructionsContainer = document.getElementById(
+        'instructionsContainer'
+      );
+      instructionsContainer.innerHTML = `
           <div class="instruction-input-row">
             <div class="instruction-number">1</div>
             <textarea class="form-textarea instruction-input" placeholder="Enter instruction step" data-index="0"></textarea>
             <button type="button" class="btn-icon remove-instruction" onclick="removeInstruction(0)">×</button>
           </div>
         `;
-      }
+    }
 
-      let ingredientIndex = 0;
-      let instructionIndex = 0;
+    let ingredientIndex = 0;
+    let instructionIndex = 0;
 
-      function addIngredient() {
-        ingredientIndex++;
-        const container = document.getElementById('ingredientsContainer');
-        const div = document.createElement('div');
-        div.className = 'ingredient-input-row';
-        div.innerHTML = `
+    function addIngredient() {
+      ingredientIndex++;
+      const container = document.getElementById('ingredientsContainer');
+      const div = document.createElement('div');
+      div.className = 'ingredient-input-row';
+      div.innerHTML = `
           <input type="text" class="form-input ingredient-input" placeholder="e.g., 1 cup flour" data-index="${ingredientIndex}">
           <button type="button" class="btn-icon remove-ingredient" onclick="removeIngredient(${ingredientIndex})">×</button>
         `;
-        container.appendChild(div);
-      }
+      container.appendChild(div);
+    }
 
-      function removeIngredient(index) {
-        const container = document.getElementById('ingredientsContainer');
-        const rows = container.querySelectorAll('.ingredient-input-row');
-        if (rows.length > 1) {
-          const row = container
-            .querySelector(`[data-index="${index}"]`)
-            .closest('.ingredient-input-row');
-          row.remove();
-        }
+    function removeIngredient(index) {
+      const container = document.getElementById('ingredientsContainer');
+      const rows = container.querySelectorAll('.ingredient-input-row');
+      if (rows.length > 1) {
+        const row = container
+          .querySelector(`[data-index="${index}"]`)
+          .closest('.ingredient-input-row');
+        row.remove();
       }
+    }
 
-      function addInstruction() {
-        instructionIndex++;
-        const container = document.getElementById('instructionsContainer');
-        const div = document.createElement('div');
-        div.className = 'instruction-input-row';
-        const stepNumber = container.children.length + 1;
-        div.innerHTML = `
+    function addInstruction() {
+      instructionIndex++;
+      const container = document.getElementById('instructionsContainer');
+      const div = document.createElement('div');
+      div.className = 'instruction-input-row';
+      const stepNumber = container.children.length + 1;
+      div.innerHTML = `
           <div class="instruction-number">${stepNumber}</div>
           <textarea class="form-textarea instruction-input" placeholder="Enter instruction step" data-index="${instructionIndex}"></textarea>
           <button type="button" class="btn-icon remove-instruction" onclick="removeInstruction(${instructionIndex})">×</button>
         `;
-        container.appendChild(div);
+      container.appendChild(div);
+    }
+
+    function removeInstruction(index) {
+      const container = document.getElementById('instructionsContainer');
+      const rows = container.querySelectorAll('.instruction-input-row');
+      if (rows.length > 1) {
+        const row = container
+          .querySelector(`textarea[data-index="${index}"]`)
+          .closest('.instruction-input-row');
+        row.remove();
+        // Update step numbers
+        updateInstructionNumbers();
       }
+    }
 
-      function removeInstruction(index) {
-        const container = document.getElementById('instructionsContainer');
-        const rows = container.querySelectorAll('.instruction-input-row');
-        if (rows.length > 1) {
-          const row = container
-            .querySelector(`textarea[data-index="${index}"]`)
-            .closest('.instruction-input-row');
-          row.remove();
-          // Update step numbers
-          updateInstructionNumbers();
-        }
-      }
+    function updateInstructionNumbers() {
+      const container = document.getElementById('instructionsContainer');
+      const numbers = container.querySelectorAll('.instruction-number');
+      numbers.forEach((num, idx) => {
+        num.textContent = idx + 1;
+      });
+    }
 
-      function updateInstructionNumbers() {
-        const container = document.getElementById('instructionsContainer');
-        const numbers = container.querySelectorAll('.instruction-number');
-        numbers.forEach((num, idx) => {
-          num.textContent = idx + 1;
-        });
-      }
+    let createMode = 'manual'; // 'manual' | 'import'
 
-      let createMode = 'manual'; // 'manual' | 'import'
+    // Handle create recipe form submission
+    document
+      .getElementById('createRecipeForm')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
 
-      // Handle create recipe form submission
-      document
-        .getElementById('createRecipeForm')
-        .addEventListener('submit', async e => {
-          e.preventDefault();
+        const formData = new FormData(e.target);
+        const recipeData = {};
 
-          const formData = new FormData(e.target);
-          const recipeData = {};
-
-          // Get basic form data
-          for (let [key, value] of formData.entries()) {
-            if (value.trim()) {
-              recipeData[key] = value.trim();
-            }
+        // Get basic form data
+        for (let [key, value] of formData.entries()) {
+          if (value.trim()) {
+            recipeData[key] = value.trim();
           }
+        }
 
-          // Get ingredients
-          const ingredientInputs =
-            document.querySelectorAll('.ingredient-input');
-          const ingredients = [];
-          ingredientInputs.forEach(input => {
-            if (input.value.trim()) {
-              ingredients.push({
-                original_text: input.value.trim(),
-                display_text: input.value.trim(),
-              });
-            }
-          });
-          recipeData.ingredients = ingredients;
-
-          // Get instructions
-          const instructionInputs =
-            document.querySelectorAll('.instruction-input');
-          const instructions = [];
-          instructionInputs.forEach(input => {
-            if (input.value.trim()) {
-              instructions.push({
-                instruction: input.value.trim(),
-              });
-            }
-          });
-          recipeData.instructions = instructions;
-
-          // Add current date
-          recipeData.date = new Date().toISOString().split('T')[0];
-
-          try {
-            const response = await fetch('/api/recipes', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(recipeData),
+        // Get ingredients
+        const ingredientInputs =
+          document.querySelectorAll('.ingredient-input');
+        const ingredients = [];
+        ingredientInputs.forEach(input => {
+          if (input.value.trim()) {
+            ingredients.push({
+              original_text: input.value.trim(),
+              display_text: input.value.trim(),
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-              alert('Recipe created successfully! 🎉');
-              closeCreateRecipeModal();
-              loadData(); // Reload recipes and categories
-            } else {
-              alert(
-                'Error creating recipe: ' + (result.error || 'Unknown error')
-              );
-            }
-          } catch (error) {
-            console.error('Error creating recipe:', error);
-            alert('Error creating recipe. Please try again.');
           }
         });
+        recipeData.ingredients = ingredients;
 
-      // Create mode UI and import flow
-      function ensureCreateModeToggle() {
-        const section = document.getElementById('createModeSection');
-        if (!section) return;
-        section.style.display = '';
-
-        const manualBtn = document.getElementById('modeManualBtn');
-        const importBtn = document.getElementById('modeImportBtn');
-        const importRow = document.getElementById('importUrlRow');
-
-        function setMode(mode) {
-          createMode = mode;
-          const isImport = mode === 'import';
-          importRow.style.display = isImport ? '' : 'none';
-          // Visual toggle
-          if (isImport) {
-            importBtn.classList.add('btn-primary');
-            importBtn.classList.remove('btn-secondary');
-            manualBtn.classList.add('btn-secondary');
-            manualBtn.classList.remove('btn-primary');
-          } else {
-            manualBtn.classList.add('btn-primary');
-            manualBtn.classList.remove('btn-secondary');
-            importBtn.classList.add('btn-secondary');
-            importBtn.classList.remove('btn-primary');
-          }
-        }
-
-        manualBtn.onclick = () => setMode('manual');
-        importBtn.onclick = () => setMode('import');
-
-        // Default to manual on open
-        setMode('manual');
-
-        const runBtn = document.getElementById('runImportBtn');
-        const urlInput = document.getElementById('importUrlInput');
-        const useAdv = document.getElementById('useAdvancedImport');
-        const loading = document.getElementById('importLoading');
-        const msg = document.getElementById('importMessage');
-
-        function showImportMessage(text, type = 'success') {
-          msg.textContent = text;
-          msg.className = `message ${type}`;
-          msg.style.display = 'block';
-        }
-        function clearImportMessage() {
-          msg.textContent = '';
-          msg.className = 'message';
-          msg.style.display = 'none';
-        }
-
-        runBtn.onclick = async () => {
-          const url = (urlInput.value || '').trim();
-          const useAdvanced = !!useAdv.checked;
-
-          if (!url) {
-            showImportMessage('Please enter a recipe URL', 'error');
-            urlInput.focus();
-            return;
-          }
-
-          clearImportMessage();
-          loading.style.display = 'flex';
-          runBtn.disabled = true;
-
-          try {
-            // Use existing authenticated endpoint that runs extractor and persists markdown + DB
-            const resp = await fetch('/extract', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url, useAdvanced }),
+        // Get instructions
+        const instructionInputs =
+          document.querySelectorAll('.instruction-input');
+        const instructions = [];
+        instructionInputs.forEach(input => {
+          if (input.value.trim()) {
+            instructions.push({
+              instruction: input.value.trim(),
             });
-            const data = await resp.json();
-            if (data.success) {
-              showImportMessage(
-                'Imported successfully! Populating form...',
-                'success'
-              );
-
-              // Fetch the content of the saved markdown to parse fields for the form
-              // server already persisted; now hydrate form so user can review/edit
-              await hydrateFormFromMarkdownContent(
-                data.content || null,
-                data.filename
-              );
-
-              // Also refresh data in background
-              loadData();
-            } else {
-              showImportMessage(
-                data.error || 'Failed to import recipe',
-                'error'
-              );
-              if (data.details) console.error('Import details:', data.details);
-            }
-          } catch (e) {
-            console.error('Import error', e);
-            showImportMessage('Connection error. Please try again.', 'error');
-          } finally {
-            loading.style.display = 'none';
-            runBtn.disabled = false;
           }
-        };
-      }
+        });
+        recipeData.instructions = instructions;
 
-      // Populate form inputs from markdown content saved by extractor
-      async function hydrateFormFromMarkdownContent(markdown, filename) {
+        // Add current date
+        recipeData.date = new Date().toISOString().split('T')[0];
+
         try {
-          let content = markdown;
+          const response = await fetch('/api/recipes', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(recipeData),
+          });
 
-          // If content not passed back (API may omit), attempt to load via /recipe/:filename
-          if (!content && filename) {
-            const res = await fetch(`/recipe/${filename}`);
-            const j = await res.json();
-            if (j && j.success) content = j.content;
-          }
-          if (!content) return;
+          const result = await response.json();
 
-          // Extract frontmatter fields
-          const getField = re => {
-            const m = content.match(re);
-            return m ? m[1].trim() : '';
-          };
-
-          const title = getField(/title:\s*'([^']+)'/);
-          const cuisine = getField(/cuisine:\s*(.*)/);
-          const course = getField(/course:\s*(.*)/);
-          const servings = getField(/servings:\s*(.*)/);
-          const prep = getField(/prep_time:\s*(.*)/);
-          const cook = getField(/cook_time:\s*(.*)/);
-
-          // Set basic fields
-          const form = document.getElementById('createRecipeForm');
-          form.querySelector('input[name="title"]').value = title || '';
-          form.querySelector('input[name="cuisine"]').value = cuisine || '';
-          form.querySelector('input[name="course"]').value = course || '';
-          form.querySelector('input[name="servings"]').value = servings || '';
-          form.querySelector('input[name="prep_time"]').value = prep || '';
-          form.querySelector('input[name="cook_time"]').value = cook || '';
-
-          // Source URL from Notes
-          const sourceMatch = content.match(/Source:\s*(https?:\/\/[^\s]+)/);
-          form.querySelector('input[name="source_url"]').value = sourceMatch
-            ? sourceMatch[1]
-            : '';
-
-          // Ingredients section
-          const ingredientsSectionMatch = content.match(
-            /## Ingredients\s*\n((?:.*\n)*?)(?=##|$)/
-          );
-          const ingredients = [];
-          if (ingredientsSectionMatch) {
-            ingredients.push(
-              ...ingredientsSectionMatch[1]
-                .split('\n')
-                .filter(line => line.trim().startsWith('-'))
-                .map(line => line.replace(/^\s*-\s*/, '').trim())
+          if (result.success) {
+            alert('Recipe created successfully! 🎉');
+            closeCreateRecipeModal();
+            loadData(); // Reload recipes and categories
+          } else {
+            alert(
+              'Error creating recipe: ' + (result.error || 'Unknown error')
             );
           }
+        } catch (error) {
+          console.error('Error creating recipe:', error);
+          alert('Error creating recipe. Please try again.');
+        }
+      });
 
-          // Instructions section
-          const instructionsSectionMatch = content.match(
-            /## Directions\s*\n((?:.*\n)*?)(?=##|$)/
-          );
-          const instructions = [];
-          if (instructionsSectionMatch) {
-            instructions.push(
-              ...instructionsSectionMatch[1]
-                .split('\n')
-                .filter(line => line.trim().match(/^\d+\./))
-                .map(line => line.replace(/^\d+\.\s*/, '').trim())
+    // Create mode UI and import flow
+    function ensureCreateModeToggle() {
+      const section = document.getElementById('createModeSection');
+      if (!section) return;
+      section.style.display = '';
+
+      const manualBtn = document.getElementById('modeManualBtn');
+      const importBtn = document.getElementById('modeImportBtn');
+      const importRow = document.getElementById('importUrlRow');
+
+      function setMode(mode) {
+        createMode = mode;
+        const isImport = mode === 'import';
+        importRow.style.display = isImport ? '' : 'none';
+        // Visual toggle
+        if (isImport) {
+          importBtn.classList.add('btn-primary');
+          importBtn.classList.remove('btn-secondary');
+          manualBtn.classList.add('btn-secondary');
+          manualBtn.classList.remove('btn-primary');
+        } else {
+          manualBtn.classList.add('btn-primary');
+          manualBtn.classList.remove('btn-secondary');
+          importBtn.classList.add('btn-secondary');
+          importBtn.classList.remove('btn-primary');
+        }
+      }
+
+      manualBtn.onclick = () => setMode('manual');
+      importBtn.onclick = () => setMode('import');
+
+      // Default to manual on open
+      setMode('manual');
+
+      const runBtn = document.getElementById('runImportBtn');
+      const urlInput = document.getElementById('importUrlInput');
+      const useAdv = document.getElementById('useAdvancedImport');
+      const loading = document.getElementById('importLoading');
+      const msg = document.getElementById('importMessage');
+
+      function showImportMessage(text, type = 'success') {
+        msg.textContent = text;
+        msg.className = `message ${type}`;
+        msg.style.display = 'block';
+      }
+      function clearImportMessage() {
+        msg.textContent = '';
+        msg.className = 'message';
+        msg.style.display = 'none';
+      }
+
+      runBtn.onclick = async () => {
+        const url = (urlInput.value || '').trim();
+        const useAdvanced = !!useAdv.checked;
+
+        if (!url) {
+          showImportMessage('Please enter a recipe URL', 'error');
+          urlInput.focus();
+          return;
+        }
+
+        clearImportMessage();
+        loading.style.display = 'flex';
+        runBtn.disabled = true;
+
+        try {
+          // Use existing authenticated endpoint that runs extractor and persists markdown + DB
+          const resp = await fetch('/extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, useAdvanced }),
+          });
+          const data = await resp.json();
+          if (data.success) {
+            showImportMessage(
+              'Imported successfully! Populating form...',
+              'success'
             );
-          }
 
-          // Fill ingredients UI
-          const ingredientsContainer = document.getElementById(
-            'ingredientsContainer'
+            // Fetch the content of the saved markdown to parse fields for the form
+            // server already persisted; now hydrate form so user can review/edit
+            await hydrateFormFromMarkdownContent(
+              data.content || null,
+              data.filename
+            );
+
+            // Also refresh data in background
+            loadData();
+          } else {
+            showImportMessage(
+              data.error || 'Failed to import recipe',
+              'error'
+            );
+            if (data.details) console.error('Import details:', data.details);
+          }
+        } catch (e) {
+          console.error('Import error', e);
+          showImportMessage('Connection error. Please try again.', 'error');
+        } finally {
+          loading.style.display = 'none';
+          runBtn.disabled = false;
+        }
+      };
+    }
+
+    // Populate form inputs from markdown content saved by extractor
+    async function hydrateFormFromMarkdownContent(markdown, filename) {
+      try {
+        let content = markdown;
+
+        // If content not passed back (API may omit), attempt to load via /recipe/:filename
+        if (!content && filename) {
+          const res = await fetch(`/recipe/${filename}`);
+          const j = await res.json();
+          if (j && j.success) content = j.content;
+        }
+        if (!content) return;
+
+        // Extract frontmatter fields
+        const getField = re => {
+          const m = content.match(re);
+          return m ? m[1].trim() : '';
+        };
+
+        const title = getField(/title:\s*'([^']+)'/);
+        const cuisine = getField(/cuisine:\s*(.*)/);
+        const course = getField(/course:\s*(.*)/);
+        const servings = getField(/servings:\s*(.*)/);
+        const prep = getField(/prep_time:\s*(.*)/);
+        const cook = getField(/cook_time:\s*(.*)/);
+
+        // Set basic fields
+        const form = document.getElementById('createRecipeForm');
+        form.querySelector('input[name="title"]').value = title || '';
+        form.querySelector('input[name="cuisine"]').value = cuisine || '';
+        form.querySelector('input[name="course"]').value = course || '';
+        form.querySelector('input[name="servings"]').value = servings || '';
+        form.querySelector('input[name="prep_time"]').value = prep || '';
+        form.querySelector('input[name="cook_time"]').value = cook || '';
+
+        // Source URL from Notes
+        const sourceMatch = content.match(/Source:\s*(https?:\/\/[^\s]+)/);
+        form.querySelector('input[name="source_url"]').value = sourceMatch
+          ? sourceMatch[1]
+          : '';
+
+        // Ingredients section
+        const ingredientsSectionMatch = content.match(
+          /## Ingredients\s*\n((?:.*\n)*?)(?=##|$)/
+        );
+        const ingredients = [];
+        if (ingredientsSectionMatch) {
+          ingredients.push(
+            ...ingredientsSectionMatch[1]
+              .split('\n')
+              .filter(line => line.trim().startsWith('-'))
+              .map(line => line.replace(/^\s*-\s*/, '').trim())
           );
-          ingredientsContainer.innerHTML = '';
-          ingredientIndex = 0;
-          ingredients.forEach((ing, idx) => {
-            const row = document.createElement('div');
-            row.className = 'ingredient-input-row';
-            row.innerHTML = `
+        }
+
+        // Instructions section
+        const instructionsSectionMatch = content.match(
+          /## Directions\s*\n((?:.*\n)*?)(?=##|$)/
+        );
+        const instructions = [];
+        if (instructionsSectionMatch) {
+          instructions.push(
+            ...instructionsSectionMatch[1]
+              .split('\n')
+              .filter(line => line.trim().match(/^\d+\./))
+              .map(line => line.replace(/^\d+\.\s*/, '').trim())
+          );
+        }
+
+        // Fill ingredients UI
+        const ingredientsContainer = document.getElementById(
+          'ingredientsContainer'
+        );
+        ingredientsContainer.innerHTML = '';
+        ingredientIndex = 0;
+        ingredients.forEach((ing, idx) => {
+          const row = document.createElement('div');
+          row.className = 'ingredient-input-row';
+          row.innerHTML = `
         <input type="text" class="form-input ingredient-input" placeholder="e.g., 1 cup flour" data-index="${idx}" value="${ing.replace(
-              /"/g,
-              '"'
-            )}">
+            /"/g,
+            '"'
+          )}">
         <button type="button" class="btn-icon remove-ingredient" onclick="removeIngredient(${idx})">×</button>
       `;
-            ingredientsContainer.appendChild(row);
-            ingredientIndex = idx;
-          });
-          if (ingredients.length === 0) {
-            ingredientsContainer.innerHTML = `
+          ingredientsContainer.appendChild(row);
+          ingredientIndex = idx;
+        });
+        if (ingredients.length === 0) {
+          ingredientsContainer.innerHTML = `
         <div class="ingredient-input-row">
           <input type="text" class="form-input ingredient-input" placeholder="e.g., 1 cup flour" data-index="0">
           <button type="button" class="btn-icon remove-ingredient" onclick="removeIngredient(0)">×</button>
         </div>
       `;
-            ingredientIndex = 0;
-          }
+          ingredientIndex = 0;
+        }
 
-          // Fill instructions UI
-          const instructionsContainer = document.getElementById(
-            'instructionsContainer'
-          );
-          instructionsContainer.innerHTML = '';
-          instructionIndex = 0;
-          instructions.forEach((inst, idx) => {
-            const row = document.createElement('div');
-            row.className = 'instruction-input-row';
-            row.innerHTML = `
+        // Fill instructions UI
+        const instructionsContainer = document.getElementById(
+          'instructionsContainer'
+        );
+        instructionsContainer.innerHTML = '';
+        instructionIndex = 0;
+        instructions.forEach((inst, idx) => {
+          const row = document.createElement('div');
+          row.className = 'instruction-input-row';
+          row.innerHTML = `
         <div class="instruction-number">${idx + 1}</div>
         <textarea class="form-textarea instruction-input" placeholder="Enter instruction step" data-index="${idx}">${inst
               .replace(/</g, '<')
               .replace(/>/g, '>')}</textarea>
         <button type="button" class="btn-icon remove-instruction" onclick="removeInstruction(${idx})">×</button>
       `;
-            instructionsContainer.appendChild(row);
-            instructionIndex = idx;
-          });
-          if (instructions.length === 0) {
-            instructionsContainer.innerHTML = `
+          instructionsContainer.appendChild(row);
+          instructionIndex = idx;
+        });
+        if (instructions.length === 0) {
+          instructionsContainer.innerHTML = `
         <div class="instruction-input-row">
           <div class="instruction-number">1</div>
           <textarea class="form-textarea instruction-input" placeholder="Enter instruction step" data-index="0"></textarea>
           <button type="button" class="btn-icon remove-instruction" onclick="removeInstruction(0)">×</button>
         </div>
       `;
-            instructionIndex = 0;
-          }
-
-          updateInstructionNumbers();
-
-          // Switch mode back to manual so user can edit then submit to /api/recipes
-          createMode = 'manual';
-        } catch (e) {
-          console.error('Failed to hydrate form from markdown', e);
+          instructionIndex = 0;
         }
+
+        updateInstructionNumbers();
+
+        // Switch mode back to manual so user can edit then submit to /api/recipes
+        createMode = 'manual';
+      } catch (e) {
+        console.error('Failed to hydrate form from markdown', e);
       }
+    }
 
-      // Close create recipe modal on outside click
-      document
-        .getElementById('createRecipeModal')
-        .addEventListener('click', e => {
-          if (e.target.id === 'createRecipeModal') {
-            closeCreateRecipeModal();
-          }
-        });
-
-      // Close create recipe modal on escape key
-      document.addEventListener('keydown', e => {
-        if (
-          e.key === 'Escape' &&
-          document
-            .getElementById('createRecipeModal')
-            .classList.contains('active')
-        ) {
+    // Close create recipe modal on outside click
+    document
+      .getElementById('createRecipeModal')
+      .addEventListener('click', e => {
+        if (e.target.id === 'createRecipeModal') {
           closeCreateRecipeModal();
         }
       });
 
-      // Load data on page load
-      loadData();
-    </script>
-  </body>
+    // Close create recipe modal on escape key
+    document.addEventListener('keydown', e => {
+      if (
+        e.key === 'Escape' &&
+        document
+          .getElementById('createRecipeModal')
+          .classList.contains('active')
+      ) {
+        closeCreateRecipeModal();
+      }
+    });
+
+    // Load data on page load
+    loadData();
+  </script>
+</body>
+
 </html>

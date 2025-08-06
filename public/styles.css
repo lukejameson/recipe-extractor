@@ -99,6 +99,24 @@ body {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
   }
+
+  /* Ensure safe area padding in standalone mode */
+  body.viewer .header {
+    padding-top: max(env(safe-area-inset-top), 20px) !important;
+  }
+
+  body.viewer .mobile-nav {
+    height: calc(56px + max(env(safe-area-inset-bottom), 20px)) !important;
+    padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
+  }
+
+  body.viewer .fab {
+    bottom: calc(74px + max(env(safe-area-inset-bottom), 30px)) !important;
+  }
+
+  body.viewer .container {
+    padding-bottom: calc(5.5rem + max(env(safe-area-inset-bottom), 30px)) !important;
+  }
 }
 
 /* iOS Safari standalone detection via JavaScript class */
@@ -113,6 +131,24 @@ html.pwa-standalone body.viewer .container {
   -webkit-overflow-scrolling: touch;
   height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+/* Additional PWA safe area handling */
+html.pwa-standalone body.viewer .header {
+  padding-top: max(env(safe-area-inset-top), 20px) !important;
+}
+
+html.pwa-standalone body.viewer .mobile-nav {
+  height: calc(56px + max(env(safe-area-inset-bottom), 20px)) !important;
+  padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
+}
+
+html.pwa-standalone body.viewer .fab {
+  bottom: calc(74px + max(env(safe-area-inset-bottom), 30px)) !important;
+}
+
+html.pwa-standalone body.viewer .container {
+  padding-bottom: calc(5.5rem + max(env(safe-area-inset-bottom), 30px)) !important;
 }
 
 /* Layout */
@@ -1277,7 +1313,7 @@ body.viewer .mobile-nav {
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   z-index: 999; /* above content and below modals */
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -1351,6 +1387,8 @@ body.login {
   align-items: center;
   min-height: 100vh;
   padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
 body.login .login-container {
   background: var(--surface);
