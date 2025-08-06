@@ -418,10 +418,17 @@ body.viewer .recipe-detail {
 body.viewer .recipe-detail-header {
   position: sticky;
   top: 0;
-  padding: calc(0.6rem + env(safe-area-inset-top)) 0.9rem 0.6rem; /* include notch inset on iOS */
+  padding: 4rem 0.9rem 0.6rem; /* hard padding for mobile to clear status bar */
   border-bottom: 1px solid var(--border);
   background: rgba(24, 24, 28, 0.98);
   z-index: 2;
+}
+/* Close button anchored to header so it follows header padding on mobile/PWA */
+body.viewer .recipe-detail-header .close-modal {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
 }
 
 /* When running as PWA, guarantee extra headroom under clock/Dynamic Island */
@@ -603,10 +610,11 @@ body.viewer .actions-toggle {
     border-radius: 14px;
   }
 }
+/* Remove generic positioning so header-anchored rule takes effect */
 body.viewer .close-modal {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  position: static;
+  top: auto;
+  right: auto;
   width: 2.5rem;
   height: 2.5rem;
   border: none;
